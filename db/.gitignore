@@ -1,0 +1,10 @@
+# Şifreler ve anahtarlar
+.env
+
+# Python sanal ortamı ve önbellek
+venv/
+__pycache__/
+*.pyc
+
+# Log dosyaları
+*.log
