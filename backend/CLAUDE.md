@@ -13,7 +13,7 @@ Detaylı adım adım faz planı: `backend/PLAN.md` (gerektiğinde oku).
 - DB sürücüsü: **psycopg 3** → `DATABASE_URL=postgresql+psycopg://...`, DB adı **`movie_reviews`**
 - Auth: JWT (**PyJWT**) + bcrypt (**pwdlib[bcrypt]**); login formu için python-multipart. python-jose ve passlib KULLANILMAZ (bakımsız, bcrypt 5 ile uyumsuz).
 - **PostgreSQL** — şema `db/database/schema.sql`, sahibi Zeliha
-- Duygu analizi: **Google Gemini API** (`google-generativeai`)
+- Duygu analizi: **Google Gemini API**, resmi SDK **`google-genai`** (`google-generativeai` KULLANILMAZ, kullanımdan kaldırıldı). Model `GEMINI_MODEL` ayarından okunur, koda gömülmez.
 - Test: pytest + ruff (testler gerçek PostgreSQL'e karşı; trigger ve view'lar SQLite'ta yok)
 
 ## Çalışma kuralları
@@ -47,6 +47,7 @@ Kaynak: `frontend/src/types.ts` (yanıt şekilleri ve query parametre adları bi
 - `POST /movies/{id}/reviews` (rating zorunlu 1–5, `review_text` opsiyonel; ikinci yorum → 409), `GET /movies/{id}/reviews` (+ `username`)
 - `GET` / `PATCH` / `DELETE /movies/{id}/reviews/me` (korumalı; kullanıcının kendi yorumu; yoksa 404, DELETE → 204)
 - `GET /users/me/reviews` (korumalı) → `Paginated[Review]`: kullanıcının tüm yorumları
+- `GET /movies/{id}/sentiment-summary` → `{positive, neutral, negative, pending}` (grafik için)
 - **Hata formatı:** `detail` her zaman string (`types.ts` `ApiError`). 422'de `{"detail": "<alan>: <Türkçe mesaj>", "errors": [...]}` (`app/core/errors.py`).
 - **CORS:** frontend origin'ine (`http://localhost:5173`) izin ver.
 

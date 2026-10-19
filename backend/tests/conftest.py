@@ -4,6 +4,9 @@ import pytest
 
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://test:test@localhost:5432/test")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-at-least-32-bytes-long")
+os.environ.setdefault("GEMINI_MODEL", "test-model")
+# Testler gerçek Gemini'ye asla çıkmasın: .env'deki anahtar ezilir.
+os.environ["GOOGLE_API_KEY"] = ""
 
 
 class NoDatabase:

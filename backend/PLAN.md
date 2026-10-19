@@ -36,7 +36,7 @@ Movie-Reviews-System/
 
 ## 1. Teknoloji (senin tarafın)
 
-FastAPI · SQLAlchemy 2.x · **psycopg 3** (`psycopg[binary]`) · Pydantic · **PyJWT** · **pwdlib[bcrypt]** · python-multipart · httpx · **google-generativeai** (Gemini) · pytest · ruff.
+FastAPI · SQLAlchemy 2.x · **psycopg 3** (`psycopg[binary]`) · Pydantic · **PyJWT** · **pwdlib[bcrypt]** · python-multipart · httpx · **google-genai** (Gemini, resmi SDK) · pytest · ruff.
 Bağlantı: `postgresql+psycopg://...`, DB adı `movie_reviews`.
 Migration: **yok.** Şemanın sahibi `db/database/schema.sql` (Zeliha); backend yalnızca o şemaya uyan modeller yazar.
 
@@ -110,6 +110,7 @@ VIEW movie_details     # film listesi/detayı buradan okunur; her film TEK satı
 | GET | `/directors` | `Director[]`; `search`, `limit` (1–50, varsayılan 20) — filtre kutusundaki arama için |
 | POST | `/movies/{id}/reviews` | Korumalı. `rating` zorunlu, `review_text` opsiyonel. Film yok → 404, ikinci yorum → **409** |
 | GET | `/movies/{id}/reviews` | Film yorumları (+ `username`, `sentiment_label`, `sentiment_score`, `sentiment_status`) |
+| GET | `/movies/{id}/sentiment-summary` | `{positive, neutral, negative, pending}`: analizi biten yorumların etiket dağılımı + bekleyenler; film yoksa 404 |
 | GET | `/movies/{id}/reviews/me` | Korumalı. Kullanıcının bu filme yorumu; yoksa 404 |
 | PATCH | `/movies/{id}/reviews/me` | Korumalı. `rating` ve/veya `review_text` günceller (frontend `ReviewUpdate`) |
 | DELETE | `/movies/{id}/reviews/me` | Korumalı. Kullanıcının yorumunu siler → 204 |
@@ -225,10 +226,19 @@ VIEW movie_details     # film listesi/detayı buradan okunur; her film TEK satı
 
 ---
 
-## FAZ 5 — Gemini Duygu Analizi ⭐ (ara rapor için kritik)
+## FAZ 5 — Gemini Duygu Analizi ⭐ (ara rapor için kritik) — 5.1–5.3 ✓
 
-### 5.1 — Gemini client
-- **Yapılacaklar:** `google-generativeai`, `GOOGLE_API_KEY`; `app/services/sentiment.py` içinde `analyze(text) -> {label: SentimentLabel, score}`. Aşağıdaki prompt'u kullan, yanıtı JSON parse et; etiket `SentimentLabel`'a çevrilemiyorsa veya skor 0–1 dışındaysa hata say. Skor 2 ondalığa yuvarlanır (NUMERIC(3,2)). Prompt'taki etiket listesi `SentimentLabel`'dan üretilir (elle yazılmaz). Uzun yorumlar gönderilmeden önce kısaltılabilir; DB'deki metin değiştirilmez.
+### 5.1 — Gemini client ✓
+- **Model seçimi:** `GEMINI_MODEL=gemini-3.5-flash-lite` (Settings varsayılanı da bu). Ücretsiz katmanda aynı Türkçe yorumla ölçüldü:
+
+  | Model | Süre | Sonuç |
+  | --- | --- | --- |
+  | `gemini-3.8-flash` | 503 (yoğun talep) / 504 / 10 s timeout; thinking=low ile 23–47 s | kullanılamaz |
+  | `gemini-3.6-flash` (thinking=minimal) | 1–1,6 s | doğru |
+  | `gemini-3.5-flash-lite` | 0,7–1,2 s | 3/3 doğru (olumlu/olumsuz/nötr) |
+
+  Thinking seviyesi ayarlanmıyor (`GEMINI_THINKING_LEVEL` yok); model değişirse yalnızca `.env` güncellenir.
+- **Yapılacaklar:** resmi `google-genai` SDK, `GOOGLE_API_KEY`, `GEMINI_MODEL`, `GEMINI_TIMEOUT_SECONDS`; `app/services/sentiment/` (`SentimentProvider` Protocol, `GeminiProvider`, structured output) içinde `analyze(text) -> {label: SentimentLabel, score}`. Aşağıdaki prompt'u kullan, yanıtı JSON parse et; etiket `SentimentLabel`'a çevrilemiyorsa veya skor 0–1 dışındaysa hata say. Skor 2 ondalığa yuvarlanır (NUMERIC(3,2)). Prompt'taki etiket listesi `SentimentLabel`'dan üretilir (elle yazılmaz). Uzun yorumlar gönderilmeden önce kısaltılabilir; DB'deki metin değiştirilmez.
 - **Kabul:** Örnek yorum için `{"label": "positive", "score": 0.92}` gibi bir sonuç dönüyor.
 
 **Prompt (3'lü):**
@@ -240,7 +250,7 @@ score = etiketin güven düzeyi.
 Yorum: """<REVIEW_TEXT>"""
 ```
 
-### 5.2 — İnceleme akışına bağla
+### 5.2 — İnceleme akışına bağla ✓ (BackgroundTasks; yazmadan önce `review_text` aynı mı kontrol edilir)
 - **Yapılacaklar:** `POST reviews` ve metni değiştiren `PATCH reviews/me` sonrası `sentiment_status = 'pending'` ise (yani `review_text` doluysa) `analyze()` çağır:
   - Başarılı → `sentiment_label`, `sentiment_score`, `sentiment_status = 'done'` **tek UPDATE'te** yazılır (DB CHECK'leri bunu zorunlu kılar).
   - Gemini hata/timeout/parse hatası → `sentiment_status = 'failed'`; **inceleme yine kaydedilmiş kalır**, sonradan yeniden denenebilir.
@@ -248,7 +258,7 @@ Yorum: """<REVIEW_TEXT>"""
   - Backend `pending` / `skipped` değerlerini elle yazmaz (trigger'ın işi).
 - **Kabul:** Yorumlu inceleme `done` + etiket/skorla, Gemini hatasında `failed` ile, yorumsuz inceleme `skipped` ile kaydediliyor; puandan bağımsız.
 
-### 5.3 — Sunum
+### 5.3 — Sunum ✓ (`GET /movies/{id}/sentiment-summary`)
 - **Yapılacaklar:** `GET reviews` yanıtında `sentiment_label`, `sentiment_score`, `sentiment_status` dönsün (frontend `pending`/`failed`/`skipped` için uygun durum gösterir). (İsteğe bağlı: film düzeyinde positive/neutral/negative dağılımı için ayrı uç.)
 - **Kabul:** Frontend sentiment'i okuyabiliyor.
 
@@ -373,6 +383,8 @@ DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/movie_reviews
 SECRET_KEY=degistir-bunu
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 GOOGLE_API_KEY=buraya-gemini-key
+GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_TIMEOUT_SECONDS=10
 # TMDB_API_KEY=... (yalnızca ingest sana kalırsa)
 ```
 
