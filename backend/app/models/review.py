@@ -63,3 +63,7 @@ class Review(Base):
 
     movie: Mapped[Movie] = relationship()
     user: Mapped[User] = relationship()
+
+    @property
+    def username(self) -> str:
+        return self.user.username

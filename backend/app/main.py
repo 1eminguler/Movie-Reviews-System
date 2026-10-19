@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.api import auth, directors, genres, movies, users
+from app.api import auth, directors, genres, movies, reviews, users
 from app.core.config import get_settings
 from app.core.errors import validation_exception_handler
 from app.db.session import get_db
@@ -20,6 +20,7 @@ app.include_router(users.router)
 app.include_router(movies.router)
 app.include_router(genres.router)
 app.include_router(directors.router)
+app.include_router(reviews.router)
 
 app.add_middleware(
     CORSMiddleware,

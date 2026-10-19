@@ -113,6 +113,7 @@ VIEW movie_details     # film listesi/detayı buradan okunur; her film TEK satı
 | GET | `/movies/{id}/reviews/me` | Korumalı. Kullanıcının bu filme yorumu; yoksa 404 |
 | PATCH | `/movies/{id}/reviews/me` | Korumalı. `rating` ve/veya `review_text` günceller (frontend `ReviewUpdate`) |
 | DELETE | `/movies/{id}/reviews/me` | Korumalı. Kullanıcının yorumunu siler → 204 |
+| GET | `/users/me/reviews` | Korumalı. `Paginated[Review]`: kullanıcının tüm yorumları (profil sayfası); `page`, `page_size` |
 
 **Kontratın kaynağı:** Emin'in `frontend/src/types.ts` dosyası (`Movie`, `Genre`, `Director`, `MovieFilters`, `MovieSort`, `Paginated<T>`, `Review`, `ApiError`). Yanıt şekilleri ve query parametre adları bununla birebir aynıdır.
 
@@ -193,22 +194,22 @@ VIEW movie_details     # film listesi/detayı buradan okunur; her film TEK satı
 
 ---
 
-## FAZ 4 — İnceleme + Puan (+ ortalama trigger'ı doğrulaması)
+## FAZ 4 — İnceleme + Puan (+ ortalama trigger'ı doğrulaması) ✓
 
-### 4.1 — İnceleme oluşturma
+### 4.1 — İnceleme oluşturma ✓
 - **Yapılacaklar:** `POST /movies/{id}/reviews` (korumalı). `rating` zorunlu (1–5), `review_text` opsiyonel (`NULL` ya da dolu metin). INSERT'te yalnızca `movie_id, user_id, rating, review_text` yazılır; `sentiment_status` DB'ye bırakılır (trigger metinsizse `skipped` yapar). Film yok → 404. `UNIQUE(user_id, movie_id)` ihlali (`IntegrityError`) yakalanır → **409 Conflict**.
 - **Kabul:** Giriş yapan kullanıcı puan (ve varsa yorum) ekleyebiliyor; metinsiz yorum `skipped`, metinli `pending` dönüyor; aynı filme ikinci yorum 409.
 
-### 4.2 — İnceleme listeleme
+### 4.2 — İnceleme listeleme ✓
 - **Yapılacaklar:** `GET /movies/{id}/reviews` (kullanıcı adı + sentiment alanları + `sentiment_status`, `created_at DESC`, sayfalama).
   - **Not:** `ReviewRead`'e `username` alanı bu adımda eklenir (frontend `Review.username`); `users` ile JOIN'le tek sorguda gelir, N+1 yok.
 - **Kabul:** Yorumlar `username` ile listeleniyor.
 
-### 4.3 — Ortalama trigger'ının doğru çalıştığını test et
+### 4.3 — Ortalama trigger'ının doğru çalıştığını test et ✓
 - **Yapılacaklar:** Backend `movies.avg_rating` / `review_count`'a **yazmaz**; trigger'ın davranışını entegrasyon testiyle doğrula: yorum ekle → `review_count` +1 ve `avg_rating` doğru (2 ondalık); puan güncelle → ortalama değişir; yorum sil → değerler geri hesaplanır; son yorum silinince `avg_rating = NULL`, `review_count = 0`. Yorum ekleme yanıtından sonra `GET /movies/{id}` güncel değeri döndürmeli.
 - **Kabul:** Trigger testleri yeşil; kod tabanında bu iki kolona yazan satır yok.
 
-### 4.4 — Kullanıcının kendi yorumu: oku / güncelle / sil
+### 4.4 — Kullanıcının kendi yorumu: oku / güncelle / sil ✓
 - **Yapılacaklar:** (hepsi korumalı, `CurrentUser`; yorum `(user_id, movie_id)` ile bulunur)
   - `GET /movies/{id}/reviews/me` → kullanıcının bu filme yorumu (`ReviewRead`); yoksa 404.
   - `PATCH /movies/{id}/reviews/me` → `rating` ve/veya `review_text` (frontend `ReviewUpdate = Partial<ReviewCreate>`; boş/boşluk metin → `None`, en az bir alan gelmeli). Yorum yoksa 404.
@@ -216,7 +217,11 @@ VIEW movie_details     # film listesi/detayı buradan okunur; her film TEK satı
   - `avg_rating` / `review_count` güncellemesini ve metin değişince `sentiment_status = 'pending'` (metin silinince `skipped`) geçişini **trigger zaten yönetir**; backend bu alanlara yazmaz. Backend yalnızca **metin değiştiyse** sentiment analizini yeniden tetikler (Faz 5.2 akışı).
 - **Kabul:** PATCH sonrası ortalama güncel; metin değişince durum `pending` → analiz sonrası `done`/`failed`, sadece puan değişince sentiment korunuyor; DELETE sonrası `review_count` azalıyor; başkasının yorumuna erişim yok.
 
-> Commit: `feat: reviews + rating trigger tests`.
+### 4.5 — Kullanıcının tüm yorumları (profil sayfası) ✓
+- **Yapılacaklar:** `GET /users/me/reviews` (korumalı) → `Paginated[Review]`, `username` dahil, `created_at DESC`; `page`, `page_size` (1–100).
+- **Kabul:** Yalnızca giriş yapan kullanıcının yorumları dönüyor; sayfalama doğru.
+
+> Commit: `feat: Faz 4 yorum uçları (oluştur, listele, kendi yorumunu oku/güncelle/sil)`.
 
 ---
 

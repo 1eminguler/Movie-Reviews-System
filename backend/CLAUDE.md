@@ -46,6 +46,7 @@ Kaynak: `frontend/src/types.ts` (yanıt şekilleri ve query parametre adları bi
 - `GET /genres` → `Genre[]`; `GET /directors?search=&limit=` → `Director[]` (limit 1–50)
 - `POST /movies/{id}/reviews` (rating zorunlu 1–5, `review_text` opsiyonel; ikinci yorum → 409), `GET /movies/{id}/reviews` (+ `username`)
 - `GET` / `PATCH` / `DELETE /movies/{id}/reviews/me` (korumalı; kullanıcının kendi yorumu; yoksa 404, DELETE → 204)
+- `GET /users/me/reviews` (korumalı) → `Paginated[Review]`: kullanıcının tüm yorumları
 - **Hata formatı:** `detail` her zaman string (`types.ts` `ApiError`). 422'de `{"detail": "<alan>: <Türkçe mesaj>", "errors": [...]}` (`app/core/errors.py`).
 - **CORS:** frontend origin'ine (`http://localhost:5173`) izin ver.
 
