@@ -52,3 +52,12 @@ class ReviewRead(BaseModel):
     sentiment_status: SentimentStatus
     created_at: datetime
     updated_at: datetime
+
+
+class SentimentSummary(BaseModel):
+    """Bir filmin yorumlarının duygu dağılımı (analizi biten yorumlar + bekleyenler)."""
+
+    positive: int
+    neutral: int
+    negative: int
+    pending: int

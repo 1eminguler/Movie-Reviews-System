@@ -1,15 +1,18 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, contains_eager
 
 from app.api.deps import CurrentUser, DbSession
+from app.core.enums import SentimentLabel, SentimentStatus
+from app.db.session import SessionFactory, get_session_factory
 from app.db.utils import violated_constraint
 from app.models import Movie, Review, User
 from app.schemas.common import PageParams, Paginated
-from app.schemas.review import ReviewCreate, ReviewRead, ReviewUpdate
+from app.schemas.review import ReviewCreate, ReviewRead, ReviewUpdate, SentimentSummary
+from app.services.sentiment import SentimentProvider, analyze_review, get_sentiment_provider
 
 router = APIRouter(tags=["reviews"])
 
@@ -18,6 +21,8 @@ REVIEW_NOT_FOUND = "Bu filme yorumunuz yok"
 ALREADY_REVIEWED = "Bu filme zaten yorum yaptınız"
 
 Paging = Annotated[PageParams, Query()]
+Provider = Annotated[SentimentProvider, Depends(get_sentiment_provider)]
+Sessions = Annotated[SessionFactory, Depends(get_session_factory)]
 
 
 def not_found(detail: str) -> HTTPException:
@@ -39,6 +44,14 @@ def paginate_reviews(db: Session, condition: ColumnElement[bool], paging: PagePa
     return {"items": items, "total": total, "page": paging.page, "page_size": paging.page_size}
 
 
+def schedule_analysis(
+    tasks: BackgroundTasks, review: Review, provider: SentimentProvider, sessions: SessionFactory
+) -> None:
+    # Yanıt Gemini'yi beklemez; analiz yanıttan sonra arka planda çalışır.
+    if review.review_text is not None:
+        tasks.add_task(analyze_review, review.id, review.review_text, provider, sessions)
+
+
 def get_own_review(db: Session, movie_id: int, user: User) -> Review:
     review = db.scalar(
         select(Review).where(Review.movie_id == movie_id, Review.user_id == user.id)
@@ -54,7 +67,13 @@ def get_own_review(db: Session, movie_id: int, user: User) -> Review:
     status_code=status.HTTP_201_CREATED,
 )
 def create_review(
-    movie_id: int, payload: ReviewCreate, current_user: CurrentUser, db: DbSession
+    movie_id: int,
+    payload: ReviewCreate,
+    current_user: CurrentUser,
+    db: DbSession,
+    tasks: BackgroundTasks,
+    provider: Provider,
+    sessions: Sessions,
 ) -> Review:
     review = Review(
         movie_id=movie_id,
@@ -74,6 +93,7 @@ def create_review(
             raise not_found(MOVIE_NOT_FOUND) from None
         raise
     db.refresh(review)
+    schedule_analysis(tasks, review, provider, sessions)
     return review
 
 
@@ -91,14 +111,23 @@ def read_my_review(movie_id: int, current_user: CurrentUser, db: DbSession) -> R
 
 @router.patch("/movies/{movie_id}/reviews/me", response_model=ReviewRead)
 def update_my_review(
-    movie_id: int, payload: ReviewUpdate, current_user: CurrentUser, db: DbSession
+    movie_id: int,
+    payload: ReviewUpdate,
+    current_user: CurrentUser,
+    db: DbSession,
+    tasks: BackgroundTasks,
+    provider: Provider,
+    sessions: Sessions,
 ) -> Review:
     review = get_own_review(db, movie_id, current_user)
+    old_text = review.review_text
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(review, field, value)
     db.commit()
     # avg_rating, sentiment_status ve updated_at'i trigger'lar değiştirir; DB'den oku.
     db.refresh(review)
+    if review.review_text != old_text:
+        schedule_analysis(tasks, review, provider, sessions)
     return review
 
 
@@ -111,3 +140,22 @@ def delete_my_review(movie_id: int, current_user: CurrentUser, db: DbSession) ->
 @router.get("/users/me/reviews", response_model=Paginated[ReviewRead])
 def list_my_reviews(current_user: CurrentUser, paging: Paging, db: DbSession) -> dict:
     return paginate_reviews(db, Review.user_id == current_user.id, paging)
+
+
+@router.get("/movies/{movie_id}/sentiment-summary", response_model=SentimentSummary)
+def sentiment_summary(movie_id: int, db: DbSession) -> dict[str, int]:
+    if db.get(Movie, movie_id) is None:
+        raise not_found(MOVIE_NOT_FOUND)
+    counts = {
+        label.value: func.count().filter(
+            Review.sentiment_status == SentimentStatus.DONE, Review.sentiment_label == label
+        )
+        for label in SentimentLabel
+    }
+    counts["pending"] = func.count().filter(Review.sentiment_status == SentimentStatus.PENDING)
+    row = db.execute(
+        select(*(column.label(name) for name, column in counts.items())).where(
+            Review.movie_id == movie_id
+        )
+    ).one()
+    return row._asdict()

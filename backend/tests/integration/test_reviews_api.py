@@ -237,7 +237,11 @@ def test_get_my_review(client, movie, alice):
     response = client.get(f"/movies/{movie.id}/reviews/me", headers=alice.headers)
 
     assert response.status_code == 200
-    assert response.json() == created
+    # Sentiment alanları arka plan analiziyle değişir (bkz. test_sentiment_flow.py).
+    sentiment_fields = {"sentiment_label", "sentiment_score", "sentiment_status"}
+    assert {k: v for k, v in response.json().items() if k not in sentiment_fields} == {
+        k: v for k, v in created.items() if k not in sentiment_fields
+    }
 
 
 def test_get_my_review_when_none_is_404(client, movie, alice):

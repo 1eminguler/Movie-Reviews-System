@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     GOOGLE_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
+    GEMINI_TIMEOUT_SECONDS: float = 10
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
 
