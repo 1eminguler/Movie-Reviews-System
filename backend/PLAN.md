@@ -277,60 +277,32 @@ Yorum: """<REVIEW_TEXT>"""
 
 ---
 
-## FAZ 6 — Test + CI
+## FAZ 6 — Test + CI ✓
 
-### 6.1 — Testler
+### 6.1 — Testler ✓
 - **Yapılacaklar:** pytest ile auth, inceleme ekleme (409 dahil), filtreler, ortalama trigger'ı, `sentiment_status` geçişleri, sentiment (Gemini **mock'lu**). Testler gerçek PostgreSQL'e karşı çalışır (trigger/view SQLite'ta yok); test DB'si `db/database/schema.sql` ile kurulur, her test transaction içinde çalışıp geri alınır. Mocking CEN315 Test Engineering ile birebir örtüşür.
-- **Kabul:** `pytest` yeşil.
+- **Yapı:** `tests/` birim testleri (DB'siz `client` fixture'ı; DB'ye dokunursa test düşer), `tests/integration/` gerçek PostgreSQL (`@pytest.mark.integration`, `TEST_DATABASE_URL` yoksa skip). `tests/conftest.py` `GOOGLE_API_KEY`'i zorla boşaltır: hiçbir test gerçek Gemini'ye çıkmaz.
+- **Kabul:** `pytest` yeşil (217 test).
 
-**Mock örneği:**
+**Gemini mock'u (dependency override + FakeProvider, `tests/integration/conftest.py`):**
 ```python
-def test_review_creates_sentiment(monkeypatch, client, auth_header):
-    def fake_analyze(text):
-        return {"label": SentimentLabel.POSITIVE, "score": 0.9}
-    monkeypatch.setattr("app.services.sentiment.analyze", fake_analyze)
-    r = client.post("/movies/1/reviews",
-                    json={"rating": 5, "review_text": "Great movie"},
-                    headers=auth_header)
-    assert r.status_code == 201
-    assert r.json()["sentiment_label"] == "positive"
-    assert r.json()["sentiment_status"] == "done"
+def test_post_with_text_marks_done(client, movie, user, sentiment):
+    sentiment.result = SentimentResult(label=SentimentLabel.NEGATIVE, score=0.81)
+    client.post(f"/movies/{movie.id}/reviews",
+                json={"rating": 5, "review_text": "Berbat bir filmdi"}, headers=user.headers)
+    assert sentiment.calls == ["Berbat bir filmdi"]
 ```
 
-### 6.2 — CI (GitHub Actions)
-- **Yapılacaklar:** `.github/workflows/ci.yml` ekle; her PR'de postgres servisi + `db/database/schema.sql` yükleme + pytest. `main`'e branch protection ile "CI yeşil olmadan merge yok".
-- **Kabul:** PR açınca testler otomatik çalışıyor.
+### 6.2 — CI (GitHub Actions) ✓
+- **Dosya:** `.github/workflows/backend-ci.yml` (repo kökü). README'de CI rozeti var.
+- **Tetikleyici:** `main`'e push ve `main`'e açılan PR; yalnızca `backend/**`, `db/database/schema.sql` veya workflow dosyası değişince.
+- **Ortam:** `ubuntu-latest`, Python 3.10 (lokal ile aynı) + pip cache, `postgres:18` servisi (health check'li). Boş `movie_reviews_test` DB'sine `psql -v ON_ERROR_STOP=1` ile `schema.sql` yüklenir. `TEST_DATABASE_URL` bu DB'yi gösterir; `DATABASE_URL` ve `SECRET_KEY` sahte; **`GOOGLE_API_KEY` yok**.
+- **Adımlar:** `pip install -r backend/requirements.txt` → `ruff check backend` → `pytest backend -v --junitxml=...` → JUnit raporunda **`skipped == 0`** kontrolü (entegrasyon testleri sessizce atlanırsa CI kırmızı olur).
+- **Doğrulama:** actionlint 1.7.12 ile 0 hata; aynı adımlar lokalde boş bir DB'ye karşı çalıştırıldı (217 passed, skipped=0); `TEST_DATABASE_URL` boşken skip kontrolü exit 1 verdi.
+- **Elle yapılacak (repo sahibi):** GitHub → Settings → Branches → `main` için branch protection: "Require status checks to pass" → `Backend CI / test`. Böylece "CI yeşil olmadan merge yok" kuralı zorunlu olur.
+- **Kabul:** PR açınca testler otomatik çalışıyor; kırmızı CI'da merge engelli.
 
-```yaml
-name: CI
-on:
-  push: { branches: [main] }
-  pull_request: { branches: [main] }
-jobs:
-  backend-tests:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:18
-        env: { POSTGRES_USER: test, POSTGRES_PASSWORD: test, POSTGRES_DB: movie_reviews }
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd pg_isready --health-interval 10s
-          --health-timeout 5s --health-retries 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - run: psql -h localhost -U test -d movie_reviews -v ON_ERROR_STOP=1 -f db/database/schema.sql
-        env: { PGPASSWORD: test }
-      - run: pip install -r backend/requirements.txt
-      - run: ruff check backend
-      - run: pytest backend -v
-        env:
-          DATABASE_URL: postgresql+psycopg://test:test@localhost:5432/movie_reviews
-```
-
-> Commit: `ci: pytest workflow`.
+> Commit: `ci: backend GitHub Actions workflow`.
 
 ---
 
