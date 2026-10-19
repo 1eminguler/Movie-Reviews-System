@@ -1,23 +1,6 @@
 from datetime import timedelta
 
-import pytest
-from fastapi.testclient import TestClient
-
 from app.core.security import create_access_token
-from app.db.session import get_db
-from app.main import app
-
-
-class NoDatabase:
-    def __getattr__(self, name):
-        raise AssertionError("Bu istek veritabanına ulaşmamalıydı")
-
-
-@pytest.fixture
-def client():
-    app.dependency_overrides[get_db] = lambda: NoDatabase()
-    yield TestClient(app)
-    app.dependency_overrides.clear()
 
 
 def test_users_me_without_token_is_401(client):

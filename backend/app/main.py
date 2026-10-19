@@ -7,13 +7,16 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.api import auth, users
+from app.api import auth, directors, genres, movies, users
 from app.core.config import get_settings
 from app.db.session import get_db
 
 app = FastAPI(title="Movie Reviews System API")
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(movies.router)
+app.include_router(genres.router)
+app.include_router(directors.router)
 
 app.add_middleware(
     CORSMiddleware,
