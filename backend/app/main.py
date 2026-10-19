@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -9,9 +10,11 @@ from sqlalchemy.orm import Session
 
 from app.api import auth, directors, genres, movies, users
 from app.core.config import get_settings
+from app.core.errors import validation_exception_handler
 from app.db.session import get_db
 
 app = FastAPI(title="Movie Reviews System API")
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(movies.router)
