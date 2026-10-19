@@ -1,6 +1,7 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = ["integration: TEST_DATABASE_URL ile gerçek PostgreSQL'e bağlanan testler"]
 
 [tool.ruff]
 line-length = 100
