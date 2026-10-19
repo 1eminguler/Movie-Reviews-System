@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import DbSession
 from app.core.security import create_access_token, hash_password, verify_password
+from app.db.utils import violated_constraint
 from app.models import User
 from app.schemas.auth import Token
 from app.schemas.user import UserCreate, UserRead
@@ -31,8 +32,9 @@ def register(payload: UserCreate, db: DbSession) -> User:
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
-        detail = CONFLICT_MESSAGES.get(constraint, "Kullanıcı adı veya email zaten kullanımda")
+        detail = CONFLICT_MESSAGES.get(
+            violated_constraint(exc), "Kullanıcı adı veya email zaten kullanımda"
+        )
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail) from None
     db.refresh(user)
     return user

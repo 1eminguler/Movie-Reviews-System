@@ -1,4 +1,11 @@
+from sqlalchemy.exc import IntegrityError
+
 LIKE_ESCAPE = "\\"
+
+
+def violated_constraint(exc: IntegrityError) -> str | None:
+    """İhlal edilen PostgreSQL constraint'inin adı (örn. 'users_email_key')."""
+    return getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
 
 
 def contains_pattern(text: str) -> str:
