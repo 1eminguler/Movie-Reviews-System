@@ -39,10 +39,14 @@ Detaylı adım adım faz planı: `backend/PLAN.md` (gerektiğinde oku).
 - Gemini çağrısı bir `SentimentProvider` arayüzü arkasında olmalı (ileride yerel modele geçiş tek config).
 
 ## API kontratı (frontend/Emin ile sözleşme — değiştirirsen haber ver)
-- `POST /auth/register`, `POST /auth/login`, `GET /users/me`
-- `GET /movies` (sayfalama + filtre: tür, yönetmen, başlık araması, yaş sınırı, süre; sıralama), `GET /movies/{id}`
-- `GET /genres`
-- `POST /movies/{id}/reviews` (rating zorunlu 1–5, `review_text` opsiyonel; ikinci yorum → 409), `GET /movies/{id}/reviews`
+Kaynak: `frontend/src/types.ts` (yanıt şekilleri ve query parametre adları birebir). Ayrıntı: `PLAN.md` bölüm 4.
+- `POST /auth/register` (çakışma → 409), `POST /auth/login` (OAuth2 form → bearer token), `GET /users/me`
+- `GET /movies` → `Paginated[Movie]`: `search`, `genre_id`, `director_id`, `year_min/max`, `runtime_min/max`, `certification`, `language`, `sort` (`avg_rating`|`review_count`|`release_date`|`title`), `order` (`asc`|`desc`), `page`, `page_size` (1–100)
+- `GET /movies/{id}` → `Movie` (yoksa 404 "Film bulunamadı")
+- `GET /genres` → `Genre[]`; `GET /directors?search=&limit=` → `Director[]` (limit 1–50)
+- `POST /movies/{id}/reviews` (rating zorunlu 1–5, `review_text` opsiyonel; ikinci yorum → 409), `GET /movies/{id}/reviews` (+ `username`)
+- `GET` / `PATCH` / `DELETE /movies/{id}/reviews/me` (korumalı; kullanıcının kendi yorumu; yoksa 404, DELETE → 204)
+- **Hata formatı:** `detail` her zaman string (`types.ts` `ApiError`). 422'de `{"detail": "<alan>: <Türkçe mesaj>", "errors": [...]}` (`app/core/errors.py`).
 - **CORS:** frontend origin'ine (`http://localhost:5173`) izin ver.
 
 ## Takvim

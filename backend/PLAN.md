@@ -104,11 +104,19 @@ VIEW movie_details     # film listesi/detayı buradan okunur; her film TEK satı
 | POST | `/auth/register` | Kayıt (username/email çakışması → 409) |
 | POST | `/auth/login` | Giriş → JWT |
 | GET | `/users/me` | Token'la kullanıcı |
-| GET | `/movies` | Liste (`movie_details`): sayfalama + filtre (tür, yönetmen, başlık araması, yaş sınırı, süre) + sıralama |
-| GET | `/movies/{id}` | Detay (`movie_details`): `avg_rating`, `review_count`, `genre_names`, `director_names`... |
-| GET | `/genres` | Tür listesi (filtre seçenekleri için) |
+| GET | `/movies` | `Paginated[Movie]` (`movie_details`). Query: `search`, `genre_id`, `director_id`, `year_min`, `year_max`, `runtime_min`, `runtime_max`, `certification`, `language`, `sort` (`avg_rating` \| `review_count` \| `release_date` \| `title`, varsayılan `avg_rating`), `order` (`asc` \| `desc`, varsayılan `desc`), `page` (≥1), `page_size` (1–100, varsayılan 20) |
+| GET | `/movies/{id}` | `Movie` (`movie_details`); yoksa 404 `"Film bulunamadı"` |
+| GET | `/genres` | `Genre[]`, ada göre sıralı |
+| GET | `/directors` | `Director[]`; `search`, `limit` (1–50, varsayılan 20) — filtre kutusundaki arama için |
 | POST | `/movies/{id}/reviews` | Korumalı. `rating` zorunlu, `review_text` opsiyonel. Film yok → 404, ikinci yorum → **409** |
-| GET | `/movies/{id}/reviews` | Film yorumları (+ `sentiment_label`, `sentiment_score`, `sentiment_status`) |
+| GET | `/movies/{id}/reviews` | Film yorumları (+ `username`, `sentiment_label`, `sentiment_score`, `sentiment_status`) |
+| GET | `/movies/{id}/reviews/me` | Korumalı. Kullanıcının bu filme yorumu; yoksa 404 |
+| PATCH | `/movies/{id}/reviews/me` | Korumalı. `rating` ve/veya `review_text` günceller (frontend `ReviewUpdate`) |
+| DELETE | `/movies/{id}/reviews/me` | Korumalı. Kullanıcının yorumunu siler → 204 |
+
+**Kontratın kaynağı:** Emin'in `frontend/src/types.ts` dosyası (`Movie`, `Genre`, `Director`, `MovieFilters`, `MovieSort`, `Paginated<T>`, `Review`, `ApiError`). Yanıt şekilleri ve query parametre adları bununla birebir aynıdır.
+
+**Hata formatı (`ApiError`):** Tüm hatalarda `detail` bir **string**'dir. 422 doğrulama hatalarında `{"detail": "<alan>: <Türkçe kısa mesaj>", "errors": [...]}` döner (`errors` = FastAPI'nin ayrıntılı listesi, hata ayıklama için).
 
 ---
 
@@ -146,7 +154,7 @@ VIEW movie_details     # film listesi/detayı buradan okunur; her film TEK satı
 
 ### 1.2 — Pydantic şemaları
 - **Hedef:** İstek/yanıt tipleri.
-- **Yapılacaklar:** `ReviewCreate {rating, review_text?}` (boş/boşluk metin → `None`), `ReviewRead {..., review_text, sentiment_label, sentiment_score, sentiment_status, username}`, `MovieListItem` / `MovieDetail` (`movie_details` alanları: `poster_path`, `backdrop_path`, `release_date`, `runtime`, `certification`, `original_title`, `original_language`, `avg_rating`, `review_count`, `genre_names`, `director_names`...), `GenreRead`, `UserCreate/Read`. `rating` için 1–5 doğrulaması.
+- **Yapılacaklar:** `ReviewCreate {rating, review_text?}` (boş/boşluk metin → `None`), `ReviewRead {..., review_text, sentiment_label, sentiment_score, sentiment_status}` (`username` Faz 4.2'de eklenir), tek `MovieRead` (liste ve detay; `types.ts` `Movie` ile birebir 17 alan, `movie_details` view'ından), `GenreRead {id, tmdb_genre_id, name}`, `DirectorRead {id, tmdb_person_id, name}`, `UserCreate/Read`. `rating` için 1–5 doğrulaması.
 - **Kabul:** 6'nın üstünde/0 rating 422 veriyor; `review_text: "   "` → `None` olarak işleniyor.
 
 ---
@@ -167,22 +175,21 @@ VIEW movie_details     # film listesi/detayı buradan okunur; her film TEK satı
 
 ## FAZ 3 — Film Servis Uçları
 
-### 3.1 — Film okuma uçları
-- **Yapılacaklar:** `GET /movies` (sayfalama), `GET /movies/{id}`. İkisi de **`movie_details` view'ından** okur (türler/yönetmenler dizi olarak gelir, ek JOIN gerekmez). Varsayılan sıralama: `avg_rating DESC NULLS LAST, review_count DESC`.
-- **Kabul:** Filmler `genre_names`, `director_names` dizileriyle dönüyor; olmayan film 404.
-
-### 3.2 — Tür / yönetmen filtresi + `GET /genres`
+### 3.1 — Film, tür ve yönetmen okuma uçları (filtreler dahil) ✓
 - **Yapılacaklar:**
-  - `GET /genres` → `genres` tablosundan `{id, name}` listesi (ada göre sıralı).
-  - `GET /movies` filtreleri: `genre_ids` (çoklu, "herhangi biri" mantığı), `director_id`, `q` (başlıkta `ILIKE`, `pg_trgm` indeksli), `certification` (çoklu; "tümü" seçiliyse `NULL` olanlar da gelir), `runtime_min/max`, `original_language`; `sort` (`rating`, `release_date`, `title`).
+  - `GET /movies` → `Paginated[Movie]`, `GET /movies/{id}` → `Movie` (yoksa 404 `"Film bulunamadı"`). İkisi de **`movie_details` view'ından** okur (türler/yönetmenler dizi olarak gelir, ek JOIN gerekmez).
+  - Filtreler (`types.ts` `MovieFilters`): `search` (başlıkta `ILIKE`, `pg_trgm` indeksli; `%`, `_`, `\` kaçışlanır), **tek** `genre_id`, `director_id`, `year_min`/`year_max` (`release_date` yılı), `runtime_min`/`runtime_max`, **tek** `certification`, `language` (`original_language`).
+  - Sıralama: `sort` = `avg_rating` \| `review_count` \| `release_date` \| `title` (varsayılan `avg_rating`), `order` = `asc` \| `desc` (varsayılan `desc`); `NULL` değerler her iki yönde sonda; eşitlikte `id`.
+  - Sayfalama: `page` ≥ 1, `page_size` 1–100 (varsayılan 20). Önce yalnızca sayfadaki id'ler seçilir, view dizileri sadece o filmler için hesaplanır (derin sayfa 724 ms → 23 ms). İstek başına 2 sorgu: count + sayfa.
   - Tür/yönetmen filtresi **`EXISTS`** ile `movie_genres` / `movie_directors` üzerinden (aynı film tekrar etmez, indeks kullanılır) — bkz. `db/README.md` örnek sorgular.
-- **Kabul:** Tür + yaş sınırı + süre birlikte filtreleniyor, çok türlü film listede bir kez çıkıyor; `GET /genres` 18 tür döndürüyor.
+  - `GET /genres` → `Genre[]` (ada göre sıralı), `GET /directors?search=&limit=` → `Director[]` (limit 1–50).
+- **Kabul:** Her filtre tek başına ve birlikte çalışıyor; çok türlü film listede bir kez çıkıyor; sıralamada `NULL`'lar sonda; `total` filtreye göre doğru; geçersiz `sort`/`order`/`certification`/`page_size` → 422.
 
-### 3.3 — (Opsiyonel) TMDB client — *yalnızca ingest sana kayarsa*
+### 3.2 — (Opsiyonel) TMDB client — *ATLANDI: ingest Zeliha'da*
 - **Yapılacaklar:** `app/services/tmdb_client.py` + seed script (film/tür/yönetmen çek, DB'ye yaz).
 - **Kabul:** DB'de ≥50 film. *Zeliha yapıyorsa bu adımı atla.*
 
-> Commit: `feat: movie read endpoints + filters + genres`.
+> Commit: `feat: Faz 3.1 film, tür ve yönetmen okuma uçları`.
 
 ---
 
@@ -194,11 +201,20 @@ VIEW movie_details     # film listesi/detayı buradan okunur; her film TEK satı
 
 ### 4.2 — İnceleme listeleme
 - **Yapılacaklar:** `GET /movies/{id}/reviews` (kullanıcı adı + sentiment alanları + `sentiment_status`, `created_at DESC`, sayfalama).
-- **Kabul:** Yorumlar listeleniyor.
+  - **Not:** `ReviewRead`'e `username` alanı bu adımda eklenir (frontend `Review.username`); `users` ile JOIN'le tek sorguda gelir, N+1 yok.
+- **Kabul:** Yorumlar `username` ile listeleniyor.
 
 ### 4.3 — Ortalama trigger'ının doğru çalıştığını test et
 - **Yapılacaklar:** Backend `movies.avg_rating` / `review_count`'a **yazmaz**; trigger'ın davranışını entegrasyon testiyle doğrula: yorum ekle → `review_count` +1 ve `avg_rating` doğru (2 ondalık); puan güncelle → ortalama değişir; yorum sil → değerler geri hesaplanır; son yorum silinince `avg_rating = NULL`, `review_count = 0`. Yorum ekleme yanıtından sonra `GET /movies/{id}` güncel değeri döndürmeli.
 - **Kabul:** Trigger testleri yeşil; kod tabanında bu iki kolona yazan satır yok.
+
+### 4.4 — Kullanıcının kendi yorumu: oku / güncelle / sil
+- **Yapılacaklar:** (hepsi korumalı, `CurrentUser`; yorum `(user_id, movie_id)` ile bulunur)
+  - `GET /movies/{id}/reviews/me` → kullanıcının bu filme yorumu (`ReviewRead`); yoksa 404.
+  - `PATCH /movies/{id}/reviews/me` → `rating` ve/veya `review_text` (frontend `ReviewUpdate = Partial<ReviewCreate>`; boş/boşluk metin → `None`, en az bir alan gelmeli). Yorum yoksa 404.
+  - `DELETE /movies/{id}/reviews/me` → 204; yorum yoksa 404.
+  - `avg_rating` / `review_count` güncellemesini ve metin değişince `sentiment_status = 'pending'` (metin silinince `skipped`) geçişini **trigger zaten yönetir**; backend bu alanlara yazmaz. Backend yalnızca **metin değiştiyse** sentiment analizini yeniden tetikler (Faz 5.2 akışı).
+- **Kabul:** PATCH sonrası ortalama güncel; metin değişince durum `pending` → analiz sonrası `done`/`failed`, sadece puan değişince sentiment korunuyor; DELETE sonrası `review_count` azalıyor; başkasının yorumuna erişim yok.
 
 > Commit: `feat: reviews + rating trigger tests`.
 
@@ -220,7 +236,7 @@ Yorum: """<REVIEW_TEXT>"""
 ```
 
 ### 5.2 — İnceleme akışına bağla
-- **Yapılacaklar:** `POST reviews` sonrası `sentiment_status = 'pending'` ise (yani `review_text` doluysa) `analyze()` çağır:
+- **Yapılacaklar:** `POST reviews` ve metni değiştiren `PATCH reviews/me` sonrası `sentiment_status = 'pending'` ise (yani `review_text` doluysa) `analyze()` çağır:
   - Başarılı → `sentiment_label`, `sentiment_score`, `sentiment_status = 'done'` **tek UPDATE'te** yazılır (DB CHECK'leri bunu zorunlu kılar).
   - Gemini hata/timeout/parse hatası → `sentiment_status = 'failed'`; **inceleme yine kaydedilmiş kalır**, sonradan yeniden denenebilir.
   - `review_text` yoksa Gemini çağrılmaz; durum trigger tarafından zaten `skipped`.
@@ -315,6 +331,12 @@ jobs:
 
 ---
 
+## İleri faz notları (kod yok)
+
+- **Ağırlıklı ortalama (Bayesian) ile sıralama:** Şu an `sort=avg_rating` ham ortalamaya göre sıralıyor; tek yorumu 5 puan olan filmler listenin başına çıkıyor (örn. *Stagecoach* 5.0, 1 yorum). İleride `(v / (v + m)) · R + (m / (v + m)) · C` (v = yorum sayısı, R = film ortalaması, C = tüm filmlerin ortalaması, m = asgari yorum eşiği) ile ağırlıklı skor ve buna göre sıralama düşünülebilir. Kolon/hesap DB tarafında olacaksa Zeliha ile netleştirilir.
+
+---
+
 ## Frontend entegrasyonu (Emin ile)
 
 Emin arayüzü yapacak ve senin API'ni tüketecek. Senin tarafında tutman gerekenler:
@@ -323,7 +345,7 @@ Emin arayüzü yapacak ve senin API'ni tüketecek. Senin tarafında tutman gerek
 - **CORS:** FastAPI'de `CORSMiddleware` ile frontend origin'ine izin (Faz 0.2). Açılmazsa tarayıcı istekleri bloklanır — en sık yaşanan entegrasyon hatası budur.
 - **JWT akışı:** `login` token döndürür → Emin token'ı saklar ve `Authorization: Bearer <token>` header'ıyla gönderir. Korumalı uçlar (inceleme ekleme vb.) bunu bekler.
 - **OpenAPI `/docs`:** Swagger arayüzü Emin için hazır referanstır; uçları ve şemaları oradan görür, ayrı doküman yazmana gerek kalmaz.
-- **Tutarlı hata formatı:** 401/404/409/422 durumlarında net JSON hata döndür; Emin arayüzde buna göre durum/mesaj gösterir (409 = "bu filme zaten yorum yaptınız" / "kullanıcı adı ya da email kullanımda").
+- **Tutarlı hata formatı:** 401/404/409/422 durumlarında `detail` her zaman **string** (`types.ts` `ApiError`); Emin arayüzde doğrudan gösterebilir (409 = "bu filme zaten yorum yaptınız" / "kullanıcı adı ya da email kullanımda"). 422'de ek olarak `errors` listesi gelir (`app/core/errors.py`).
 - **Görseller:** `poster_path` / `backdrop_path` göreli yoldur; tam adres `https://image.tmdb.org/t/p/w500<path>`. `NULL` olabilir → yer tutucu görsel.
 - **Lokal çalışma:** backend `:8000`, frontend ayrı port (`:5173`); Emin base URL olarak `http://localhost:8000` kullanır. Bu ikisini baştan konuşun.
 
