@@ -11,7 +11,7 @@ Detaylı adım adım faz planı: `backend/PLAN.md` (gerektiğinde oku).
 ## Stack
 - Python + **FastAPI**, SQLAlchemy 2.x, Pydantic
 - DB sürücüsü: **psycopg 3** → `DATABASE_URL=postgresql+psycopg://...`, DB adı **`movie_reviews`**
-- Auth: JWT (python-jose) + bcrypt (passlib)
+- Auth: JWT (**PyJWT**) + bcrypt (**pwdlib[bcrypt]**); login formu için python-multipart. python-jose ve passlib KULLANILMAZ (bakımsız, bcrypt 5 ile uyumsuz).
 - **PostgreSQL** — şema `db/database/schema.sql`, sahibi Zeliha
 - Duygu analizi: **Google Gemini API** (`google-generativeai`)
 - Test: pytest + ruff (testler gerçek PostgreSQL'e karşı; trigger ve view'lar SQLite'ta yok)

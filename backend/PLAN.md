@@ -36,7 +36,7 @@ Movie-Reviews-System/
 
 ## 1. Teknoloji (senin tarafın)
 
-FastAPI · SQLAlchemy 2.x · **psycopg 3** (`psycopg[binary]`) · Pydantic · python-jose (JWT) · passlib[bcrypt] · httpx · **google-generativeai** (Gemini) · pytest · ruff.
+FastAPI · SQLAlchemy 2.x · **psycopg 3** (`psycopg[binary]`) · Pydantic · **PyJWT** · **pwdlib[bcrypt]** · python-multipart · httpx · **google-generativeai** (Gemini) · pytest · ruff.
 Bağlantı: `postgresql+psycopg://...`, DB adı `movie_reviews`.
 Migration: **yok.** Şemanın sahibi `db/database/schema.sql` (Zeliha); backend yalnızca o şemaya uyan modeller yazar.
 
@@ -154,7 +154,7 @@ VIEW movie_details     # film listesi/detayı buradan okunur; her film TEK satı
 ## FAZ 2 — Kimlik Doğrulama (JWT)
 
 ### 2.1 — Register / Login
-- **Yapılacaklar:** bcrypt (passlib) ile hash; `POST /auth/register`, `POST /auth/login` → JWT; `app/core/security.py`. Username/email çakışması (`UNIQUE`) → 409. Seed kullanıcıların hash'i (`!imported-no-login`) geçerli bir bcrypt değil → doğrulama istisna fırlatmamalı, 401 dönmeli.
+- **Yapılacaklar:** bcrypt (pwdlib) ile hash, JWT (PyJWT, HS256, `sub` = kullanıcı id); `POST /auth/register`, `POST /auth/login` → JWT; `app/core/security.py`. Username/email çakışması (`UNIQUE`) → 409. Seed kullanıcıların hash'i (`!imported-no-login`) geçerli bir bcrypt değil → doğrulama istisna fırlatmamalı, 401 dönmeli.
 - **Kabul:** Kayıt + giriş geçerli token veriyor; aynı email ile ikinci kayıt 409; seed kullanıcıyla giriş denemesi 401 (500 değil).
 
 ### 2.2 — Korumalı erişim
