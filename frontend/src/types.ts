@@ -37,6 +37,11 @@ export interface Director {
   name: string
 }
 
+export interface DirectorSearch {
+  search?: string
+  limit?: number
+}
+
 // movie_details view'ı: bir film = bir satır, türler ve yönetmenler dizi olarak gelir.
 // genre_ids / genre_names ve director_ids / director_names aynı sıradadır.
 // Yönetmeni ya da türü olmayan filmde diziler boş gelir ([]), null gelmez.
@@ -81,6 +86,13 @@ export interface Review {
   sentiment_status: SentimentStatus
   created_at: string
   updated_at: string
+}
+
+export interface SentimentSummary {
+  positive: number
+  neutral: number
+  negative: number
+  pending: number
 }
 
 // ---------------------------------------------------------------------
@@ -139,6 +151,11 @@ export interface MovieFilters {
   page_size?: number
 }
 
+export interface PageParams {
+  page?: number
+  page_size?: number
+}
+
 export interface Paginated<T> {
   items: T[]
   total: number
@@ -149,4 +166,5 @@ export interface Paginated<T> {
 // FastAPI hata yanıtı
 export interface ApiError {
   detail: string
+  errors?: unknown[] // 422 doğrulama hatalarında gelir
 }
