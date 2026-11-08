@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useMemo, useRef } from 'react'
 import { queryKeys } from '../api/queryKeys.ts'
 import {
   createReview,
@@ -9,45 +10,84 @@ import {
   getSentimentSummary,
   updateMyReview,
 } from '../api/reviews.ts'
-import type { PageParams, Paginated, Review, ReviewCreate, ReviewUpdate } from '../types.ts'
+import type { PageParams, Review, ReviewCreate, ReviewUpdate } from '../types.ts'
 
-// Duygu analizi arka planda sürer; bekleyen yorum varsa liste kısa aralıkla yenilenir
+// Yeni yazılan yorumun duygu analizi backend'de arka planda birkaç saniye sürer.
+// Seed'den gelen eski yorumlar hiç analiz edilmediği için hep 'pending' kalır;
+// bu yüzden yalnızca son birkaç dakikada yazılmış bekleyen yorumlar takip edilir.
 const PENDING_REFETCH_MS = 3000
+const PENDING_WINDOW_MS = 2 * 60 * 1000
 
-function refetchWhilePending(data: Paginated<Review> | undefined): number | false {
-  const hasPending = data?.items.some((review) => review.sentiment_status === 'pending')
-  return hasPending ? PENDING_REFETCH_MS : false
+function isFreshPending(review: Review): boolean {
+  return (
+    review.sentiment_status === 'pending' &&
+    Date.now() - Date.parse(review.updated_at) < PENDING_WINDOW_MS
+  )
+}
+
+function refetchWhilePending(reviews: Review[] | undefined): number | false {
+  return reviews?.some(isFreshPending) ? PENDING_REFETCH_MS : false
+}
+
+// Takip edilen yorumun analizi bitince ilgili filmin duygu özeti bir kez yenilenir
+function useRefreshSummaryWhenAnalyzed(reviews: Review[] | undefined) {
+  const queryClient = useQueryClient()
+  const trackedRef = useRef(new Set<number>())
+
+  useEffect(() => {
+    if (!reviews) {
+      return
+    }
+    const stillPending = new Set<number>()
+    for (const review of reviews) {
+      if (isFreshPending(review)) {
+        stillPending.add(review.id)
+      } else if (trackedRef.current.has(review.id)) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.sentimentSummary(review.movie_id) })
+      }
+    }
+    trackedRef.current = stillPending
+  }, [reviews, queryClient])
 }
 
 export function useMovieReviews(movieId: number, params: PageParams = {}) {
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.reviews.movie(movieId, params),
     queryFn: () => getMovieReviews(movieId, params),
-    refetchInterval: (query) => refetchWhilePending(query.state.data),
+    refetchInterval: (query) => refetchWhilePending(query.state.data?.items),
   })
+  useRefreshSummaryWhenAnalyzed(query.data?.items)
+  return query
 }
 
 export function useMyReviews(params: PageParams = {}) {
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.reviews.myList(params),
     queryFn: () => getMyReviews(params),
-    refetchInterval: (query) => refetchWhilePending(query.state.data),
+    refetchInterval: (query) => refetchWhilePending(query.state.data?.items),
   })
+  useRefreshSummaryWhenAnalyzed(query.data?.items)
+  return query
 }
 
 export function useMyReview(movieId: number, enabled = true) {
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.reviews.mine(movieId),
     queryFn: () => getMyReview(movieId),
     enabled,
+    refetchInterval: (query) =>
+      refetchWhilePending(query.state.data ? [query.state.data] : undefined),
   })
+  const review = query.data
+  const reviews = useMemo(() => (review ? [review] : undefined), [review])
+  useRefreshSummaryWhenAnalyzed(reviews)
+  return query
 }
 
 export function useSentimentSummary(movieId: number) {
   return useQuery({
     queryKey: queryKeys.sentimentSummary(movieId),
     queryFn: () => getSentimentSummary(movieId),
-    refetchInterval: (query) => ((query.state.data?.pending ?? 0) > 0 ? PENDING_REFETCH_MS : false),
   })
 }
 
