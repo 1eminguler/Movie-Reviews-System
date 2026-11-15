@@ -60,15 +60,16 @@ export default function Pagination({
     <nav
       role="navigation"
       aria-label="Pagination"
-      className={`flex flex-wrap items-center justify-center gap-1.5 ${className}`}
+      className={`flex flex-wrap items-center justify-center gap-2 ${className}`}
     >
       <button
         type="button"
         disabled={page <= 1}
         onClick={() => onPageChange(page - 1)}
-        className="inline-flex h-9 cursor-pointer items-center gap-1 rounded-[8px] border border-line bg-transparent px-3 text-[13px] font-medium text-ink transition-colors hover:border-mute disabled:pointer-events-none disabled:opacity-40"
+        className="btn btn-ghost btn-sm"
         aria-label="Previous page"
       >
+        <span aria-hidden="true">←</span>
         <span>Previous</span>
       </button>
 
@@ -78,7 +79,7 @@ export default function Pagination({
             return (
               <span
                 key={`ellipsis-${idx}`}
-                className="inline-flex h-9 w-8 items-center justify-center text-[13px] text-mute"
+                className="inline-flex h-11 min-w-11 items-center justify-center text-[14px] text-mute"
                 aria-hidden="true"
               >
                 …
@@ -93,10 +94,10 @@ export default function Pagination({
               type="button"
               onClick={() => onPageChange(p)}
               aria-current={isCurrent ? 'page' : undefined}
-              className={`inline-flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-[8px] border px-2 text-[13px] font-medium tabular-nums transition-colors ${
+              className={`inline-flex h-11 min-w-11 cursor-pointer items-center justify-center rounded-full px-3 text-[14px] font-medium tabular-nums transition-colors ${
                 isCurrent
-                  ? 'border-ink bg-ink text-night font-semibold'
-                  : 'border-line bg-transparent text-ink hover:border-mute'
+                  ? 'bg-ink text-night'
+                  : 'text-mute hover:bg-panel hover:text-ink'
               }`}
             >
               {p}
@@ -109,10 +110,13 @@ export default function Pagination({
         type="button"
         disabled={page >= totalPages}
         onClick={() => onPageChange(page + 1)}
-        className="inline-flex h-9 cursor-pointer items-center gap-1 rounded-[8px] border border-line bg-transparent px-3 text-[13px] font-medium text-ink transition-colors hover:border-mute disabled:pointer-events-none disabled:opacity-40"
+        className="btn btn-ghost btn-sm"
         aria-label="Next page"
       >
         <span>Next</span>
+        <span className="arrow" aria-hidden="true">
+          →
+        </span>
       </button>
     </nav>
   )

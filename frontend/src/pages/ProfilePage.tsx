@@ -1,14 +1,22 @@
-import { useMemo, useState } from 'react'
+import Counter from '../components/bits/Counter.tsx'
+import { type FormEvent, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getErrorMessage } from '../api/errors.ts'
+import { useAuth } from '../auth/useAuth.ts'
+import { FadeUp, RiseWords } from '../components/motion/Reveal.tsx'
+import EmptyState from '../components/ui/EmptyState.tsx'
 import ErrorState from '../components/ui/ErrorState.tsx'
 import Pagination from '../components/ui/Pagination.tsx'
 import Poster from '../components/ui/Poster.tsx'
 import RatingStars from '../components/ui/RatingStars.tsx'
 import SentimentBadge from '../components/ui/SentimentBadge.tsx'
 import Skeleton from '../components/ui/Skeleton.tsx'
-import { useAuth } from '../auth/useAuth.ts'
 import { useMovie } from '../hooks/useMovies.ts'
-import { useMyReviews } from '../hooks/useReviews.ts'
+import {
+  useDeleteMyReview,
+  useMyReviews,
+  useUpdateMyReview,
+} from '../hooks/useReviews.ts'
 import type { Review } from '../types.ts'
 
 function formatDate(iso: string): string {
@@ -23,16 +31,62 @@ function formatDate(iso: string): string {
   }
 }
 
-// Her yorum için ilgili filmin bilgisini yükleyen satır bileşeni
+function formatMonthYear(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date(iso))
+  } catch {
+    return iso
+  }
+}
+
+// Her yorum için ilgili filmin bilgisini yükleyen ve düzenleme/silme aksiyonlarını sunan satır bileşeni
 function MyReviewRow({ review }: { review: Review }) {
   const { data: movie, isPending } = useMovie(review.movie_id)
+  const updateMutation = useUpdateMyReview(review.movie_id)
+  const deleteMutation = useDeleteMyReview(review.movie_id)
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [editRating, setEditRating] = useState<number>(review.rating)
+  const [editText, setEditText] = useState<string>(review.review_text ?? '')
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  const handleSave = async (e: FormEvent) => {
+    e.preventDefault()
+    setActionError(null)
+    if (editRating < 1 || editRating > 5) {
+      setActionError('Please select a rating between 1 and 5.')
+      return
+    }
+    try {
+      const cleanText = editText.trim() ? editText.trim() : null
+      await updateMutation.mutateAsync({
+        rating: editRating,
+        review_text: cleanText,
+      })
+      setIsEditing(false)
+    } catch (err) {
+      setActionError(getErrorMessage(err))
+    }
+  }
+
+  const handleDelete = async () => {
+    setActionError(null)
+    try {
+      await deleteMutation.mutateAsync()
+    } catch (err) {
+      setActionError(getErrorMessage(err))
+    }
+  }
 
   return (
-    <article className="flex flex-col sm:flex-row gap-4 rounded-[10px] border border-line bg-panel p-4">
+    <article className="grid grid-cols-[72px_minmax(0,1fr)] items-start gap-6 border-b border-line py-6 sm:grid-cols-[72px_minmax(0,1fr)_auto]">
       <Link
         to={`/movies/${review.movie_id}`}
         viewTransition
-        className="w-16 sm:w-20 shrink-0 self-start rounded-[6px]"
+        className="block w-[72px] shrink-0 overflow-hidden rounded-xl"
       >
         {isPending ? (
           <Skeleton variant="poster" />
@@ -41,45 +95,126 @@ function MyReviewRow({ review }: { review: Review }) {
             path={movie?.poster_path ?? null}
             title={movie?.title ?? `Film #${review.movie_id}`}
             size="sm"
+            className="rounded-xl"
           />
         )}
       </Link>
 
-      <div className="flex-1 min-w-0 space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Link
-            to={`/movies/${review.movie_id}`}
-            viewTransition
-            className="font-display text-[17px] font-semibold text-ink hover:underline truncate"
-          >
-            {movie ? movie.title : `Film #${review.movie_id}`}
-          </Link>
+      <div className="min-w-0 space-y-2.5">
+        <Link
+          to={`/movies/${review.movie_id}`}
+          viewTransition
+          className="inline-block font-display text-[26px] leading-tight text-ink hover:underline"
+        >
+          {movie ? movie.title : `Film #${review.movie_id}`}
+        </Link>
 
-          <div className="flex items-center gap-2.5">
-            <RatingStars value={review.rating} size="sm" />
-            <SentimentBadge
-              status={review.sentiment_status}
-              label={review.sentiment_label}
-              score={review.sentiment_score}
-            />
-          </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <RatingStars value={review.rating} size="sm" />
+          <SentimentBadge
+            status={review.sentiment_status}
+            label={review.sentiment_label}
+            score={review.sentiment_score}
+          />
+          <time className="text-[13px] text-mute">
+            {formatDate(review.created_at)}
+          </time>
         </div>
 
-        {review.review_text && (
-          <p className="max-w-[72ch] text-[15px] text-ink line-clamp-3 leading-relaxed whitespace-pre-line">
-            {review.review_text}
-          </p>
+        {isEditing ? (
+          <form onSubmit={handleSave} className="mt-3 max-w-[70ch] space-y-4">
+            <div>
+              <span className="text-[13px] font-medium text-mute mb-2 block">
+                Your rating
+              </span>
+              <RatingStars
+                value={editRating}
+                onChange={(val) => setEditRating(val)}
+                size="md"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor={`edit-review-text-${review.id}`}
+                className="text-[13px] font-medium text-mute mb-2 block"
+              >
+                Your review (optional)
+              </label>
+              <textarea
+                id={`edit-review-text-${review.id}`}
+                rows={3}
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                className="field"
+                placeholder="Share your thoughts on the film…"
+              />
+            </div>
+
+            {actionError && (
+              <p role="alert" className="text-[13px] text-neg">
+                {actionError}
+              </p>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="submit"
+                disabled={updateMutation.isPending}
+                className="btn btn-primary btn-sm"
+              >
+                {updateMutation.isPending ? 'Saving…' : 'Save changes'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing(false)
+                  setActionError(null)
+                }}
+                className="btn btn-ghost btn-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            {review.review_text && (
+              <p className="max-w-[70ch] text-[16px] leading-relaxed text-ink whitespace-pre-line">
+                {review.review_text}
+              </p>
+            )}
+
+            {actionError && (
+              <p role="alert" className="text-[13px] text-neg">
+                {actionError}
+              </p>
+            )}
+          </>
         )}
+      </div>
 
-        <div className="flex items-center justify-between text-[13px] text-mute pt-1">
-          <time>{formatDate(review.created_at)}</time>
-          <Link
-            to={`/movies/${review.movie_id}`}
-            className="font-medium text-ink underline-offset-2 hover:underline"
-          >
-            View film
-          </Link>
-        </div>
+      <div className="col-span-2 flex items-center gap-2 sm:col-span-1 sm:self-start">
+        <button
+          type="button"
+          onClick={() => {
+            setEditRating(review.rating)
+            setEditText(review.review_text ?? '')
+            setActionError(null)
+            setIsEditing((prev) => !prev)
+          }}
+          className="btn btn-ghost btn-sm"
+        >
+          {isEditing ? 'Cancel' : 'Edit'}
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleteMutation.isPending}
+          className="btn btn-ghost btn-sm hover:text-neg"
+        >
+          {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
+        </button>
       </div>
     </article>
   )
@@ -122,85 +257,58 @@ export default function ProfilePage() {
   }, [allReviewsQuery.data])
 
   return (
-    <div className="space-y-8">
+    <div className="page-gutter pt-10 md:pt-16 space-y-14">
       {/* Kullanıcı bilgileri ve özet sayılar */}
-      <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-[10px] border border-line bg-panel p-6">
-        <div className="space-y-1">
-          <h1 className="font-display text-[30px] font-bold tracking-[-0.02em] text-ink">
-            {user?.username}
-          </h1>
-          <p className="text-[15px] text-mute">{user?.email}</p>
-          {user?.created_at && (
-            <p className="text-[13px] text-mute">
-              Member since {formatDate(user.created_at)}
-            </p>
-          )}
-        </div>
+      <section className="border-b border-line pb-10">
+        <h1 className="font-display text-[clamp(56px,8vw,128px)] leading-[0.9] text-ink">
+          <RiseWords text={user?.username ?? 'Profile'} />
+        </h1>
 
-        <div className="flex items-center gap-8 border-t border-line pt-4 sm:border-t-0 sm:pt-0">
-          <div>
-            <span className="block tabular-nums font-display text-[30px] font-bold text-ink">
-              {stats.total}
-            </span>
-            <span className="text-[13px] text-mute">Total reviews</span>
+        <FadeUp delay={0.4}>
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-mute">
+            {user?.created_at && (
+              <p>Member since {formatMonthYear(user.created_at)}</p>
+            )}
+            {user?.email && <p>{user.email}</p>}
           </div>
+        </FadeUp>
 
-          <div className="h-10 w-px bg-line" aria-hidden="true" />
+        <FadeUp delay={0.5}>
+          <div className="mt-8 flex flex-wrap items-start gap-12">
+            <div>
+              <span className="block font-display text-[48px] leading-none tabular-nums text-ink">
+                <Counter value={stats.total} fontSize="1em" />
+              </span>
+              <span className="mt-2 block text-[13px] text-mute">
+                Total reviews
+              </span>
+            </div>
 
-          <div>
-            <span className="block tabular-nums font-display text-[30px] font-bold text-butter">
-              {stats.total > 0 ? stats.avgRating : '—'}
-            </span>
-            <span className="text-[13px] text-mute">Average rating</span>
+            <div>
+              <span className="block font-display text-[48px] leading-none tabular-nums text-ink">
+                {stats.total > 0 ? <Counter value={stats.avgRating} decimals={1} fontSize="1em" /> : '—'}
+              </span>
+              <span className="mt-2 block text-[13px] text-mute">
+                Average rating
+              </span>
+            </div>
+
+            <div>
+              <span className="block font-display text-[48px] leading-none tabular-nums text-ink">
+                <Counter value={stats.distribution[4] ?? 0} fontSize="1em" />
+              </span>
+              <span className="mt-2 block text-[13px] text-mute">
+                Five-star ratings
+              </span>
+            </div>
           </div>
-        </div>
+        </FadeUp>
       </section>
-
-      {/* Puan dağılımı */}
-      {stats.total > 0 && (
-        <section className="rounded-[10px] border border-line bg-panel p-5 space-y-3">
-          <h2 className="font-display text-[17px] font-semibold text-ink">
-            Rating breakdown
-          </h2>
-          <div className="space-y-2 max-w-md">
-            {[5, 4, 3, 2, 1].map((star) => {
-              const count = stats.distribution[star - 1] || 0
-              const pct =
-                stats.total > 0 ? Math.round((count / stats.total) * 100) : 0
-
-              return (
-                <div
-                  key={star}
-                  className="flex items-center gap-3 text-[13px] text-ink"
-                >
-                  <span className="w-10 tabular-nums flex items-center gap-1 text-mute">
-                    <span>{star}</span>
-                    <span className="text-butter" aria-hidden="true">
-                      ★
-                    </span>
-                  </span>
-
-                  <div className="h-2 flex-1 overflow-hidden rounded-full border border-line bg-night">
-                    <div
-                      style={{ width: `${pct}%` }}
-                      className="h-full rounded-full bg-butter"
-                    />
-                  </div>
-
-                  <span className="w-16 text-right tabular-nums text-mute">
-                    {count} ({pct}%)
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-      )}
 
       {/* Kullanıcının yorumları */}
       <section className="space-y-4">
-        <h2 className="font-display text-[22px] font-bold tracking-[-0.02em] text-ink">
-          Your reviews ({myReviewsQuery.data?.total ?? 0})
+        <h2 className="font-display text-[40px] leading-tight text-ink">
+          Your <em>reviews</em>
         </h2>
 
         {myReviewsQuery.isError ? (
@@ -210,47 +318,45 @@ export default function ProfilePage() {
             title="Could not load your reviews"
           />
         ) : myReviewsQuery.isPending ? (
-          <div className="space-y-3">
+          <div className="divide-y divide-line">
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={`skel-my-rev-${i}`}
-                className="flex gap-4 rounded-[10px] border border-line bg-panel p-4"
+                className="grid grid-cols-[72px_minmax(0,1fr)] gap-6 py-6"
               >
-                <Skeleton variant="poster" className="w-16 shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton variant="text" className="h-4 w-1/3" />
-                  <Skeleton variant="text" className="h-3 w-1/4" />
-                  <Skeleton variant="text" className="h-10 w-full" />
+                <Skeleton variant="poster" className="w-[72px]" />
+                <div className="space-y-3">
+                  <Skeleton variant="text" className="h-6 w-1/3" />
+                  <Skeleton variant="text" className="h-4 w-1/4" />
+                  <Skeleton variant="text" className="h-12 w-full max-w-[70ch]" />
                 </div>
               </div>
             ))}
           </div>
         ) : myReviewsQuery.data?.items.length === 0 ? (
-          <div className="rounded-[10px] border border-line bg-panel p-8 text-center space-y-4">
-            <p className="text-[15px] text-mute">
-              You haven&apos;t reviewed any films yet.
-            </p>
-            <div>
-              <Link
-                to="/movies"
-                className="inline-flex items-center rounded-[8px] bg-ink px-4 py-2 text-[15px] font-medium text-night transition-opacity hover:opacity-90"
-              >
+          <EmptyState
+            title="You haven't reviewed any films yet"
+            description="Rate and review films you've watched to see them listed here."
+            action={
+              <Link to="/movies" className="btn btn-primary">
                 Browse movies
               </Link>
-            </div>
-          </div>
+            }
+          />
         ) : (
-          <div className="space-y-3">
-            {myReviewsQuery.data?.items.map((review) => (
-              <MyReviewRow key={review.id} review={review} />
-            ))}
+          <div>
+            <div>
+              {myReviewsQuery.data?.items.map((review) => (
+                <MyReviewRow key={review.id} review={review} />
+              ))}
+            </div>
 
             <Pagination
               page={page}
               total={myReviewsQuery.data?.total ?? 0}
               pageSize={pageSize}
               onPageChange={(p) => setPage(p)}
-              className="pt-4"
+              className="pt-8"
             />
           </div>
         )}

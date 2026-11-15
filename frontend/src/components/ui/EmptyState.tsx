@@ -14,18 +14,16 @@ export default function EmptyState({
   className = '',
 }: EmptyStateProps) {
   return (
-    <div
-      className={`flex flex-col items-center justify-center rounded-[10px] border border-line bg-panel p-8 text-center ${className}`}
-    >
-      <h3 className="font-display text-[17px] font-semibold text-ink">
+    <div className={`py-8 text-left ${className}`}>
+      <h3 className="font-display text-[32px] leading-tight text-ink">
         {title}
       </h3>
 
       {description && (
-        <p className="mt-2 max-w-[72ch] text-[15px] text-mute">{description}</p>
+        <p className="mt-2 max-w-[70ch] text-[16px] text-mute">{description}</p>
       )}
 
-      {action && <div className="mt-5">{action}</div>}
+      {action && <div className="mt-6">{action}</div>}
     </div>
   )
 }
