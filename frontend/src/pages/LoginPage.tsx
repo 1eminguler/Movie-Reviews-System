@@ -1,25 +1,15 @@
 import { motion, useReducedMotion } from 'motion/react'
-import { type FormEvent, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { getErrorMessage } from '../api/errors.ts'
-import { useAuth } from '../auth/useAuth.ts'
+import { Link, useLocation } from 'react-router-dom'
+import LoginForm from '../components/auth/LoginForm.tsx'
 import { FadeUp, RiseWords } from '../components/motion/Reveal.tsx'
 import { EASE_ENTER } from '../lib/motion.ts'
 import { TMDB_IMAGE_BASE } from '../config.ts'
 import { useMovies } from '../hooks/useMovies.ts'
 
 export default function LoginPage() {
-  const { login } = useAuth()
-  const navigate = useNavigate()
   const location = useLocation()
   const reduceMotion = useReducedMotion()
 
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [usernameError, setUsernameError] = useState<string | null>(null)
-  const [passwordError, setPasswordError] = useState<string | null>(null)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const from = (location.state as { from?: string } | undefined)?.from || '/'
 
@@ -36,39 +26,6 @@ export default function LoginPage() {
   const releaseYear = featuredMovie?.release_date
     ? featuredMovie.release_date.slice(0, 4)
     : null
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    setUsernameError(null)
-    setPasswordError(null)
-    setErrorMsg(null)
-
-    const trimmedUsername = username.trim()
-    if (trimmedUsername.length < 3 || trimmedUsername.length > 50) {
-      setUsernameError('Username must be between 3 and 50 characters.')
-      return
-    }
-
-    const passwordBytes = new TextEncoder().encode(password).length
-    if (password.length < 8) {
-      setPasswordError('Password must be at least 8 characters.')
-      return
-    }
-    if (passwordBytes > 72) {
-      setPasswordError('Password must be at most 72 bytes.')
-      return
-    }
-
-    setIsSubmitting(true)
-    try {
-      await login({ username: trimmedUsername, password })
-      navigate(from, { replace: true })
-    } catch (err) {
-      setErrorMsg(getErrorMessage(err))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   return (
     <div className="page-gutter pt-10 md:pt-16 pb-12">
@@ -125,88 +82,9 @@ export default function LoginPage() {
             </FadeUp>
 
             <FadeUp delay={0.5}>
-              {errorMsg && (
-                <div
-                  role="alert"
-                  className="mt-6 rounded-xl border border-neg/40 bg-neg/10 p-3.5 text-[13px] text-neg"
-                >
-                  {errorMsg}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-                <div>
-                  <label
-                    htmlFor="username-input"
-                    className="text-[13px] font-medium text-mute mb-2 block"
-                  >
-                    Username
-                  </label>
-                  <input
-                    id="username-input"
-                    type="text"
-                    required
-                    autoComplete="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    aria-invalid={Boolean(usernameError)}
-                    aria-describedby={
-                      usernameError ? 'username-error' : undefined
-                    }
-                    className="field"
-                    placeholder="your_username"
-                  />
-                  {usernameError && (
-                    <p
-                      id="username-error"
-                      role="alert"
-                      className="mt-1.5 text-[13px] text-neg"
-                    >
-                      {usernameError}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="password-input"
-                    className="text-[13px] font-medium text-mute mb-2 block"
-                  >
-                    Password
-                  </label>
-                  <input
-                    id="password-input"
-                    type="password"
-                    required
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    aria-invalid={Boolean(passwordError)}
-                    aria-describedby={
-                      passwordError ? 'password-error' : undefined
-                    }
-                    className="field"
-                    placeholder="At least 8 characters"
-                  />
-                  {passwordError && (
-                    <p
-                      id="password-error"
-                      role="alert"
-                      className="mt-1.5 text-[13px] text-neg"
-                    >
-                      {passwordError}
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="btn btn-primary w-full"
-                >
-                  {isSubmitting ? 'Signing in…' : 'Sign in'}
-                </button>
-              </form>
+              <div className="mt-8">
+                <LoginForm from={from} />
+              </div>
 
               <p className="mt-6 text-[14px] text-mute">
                 No account yet?{' '}
