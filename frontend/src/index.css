@@ -1,1 +1,180 @@
 @import "tailwindcss";
+@import "@fontsource-variable/fraunces";
+@import "@fontsource-variable/geist";
+
+@theme {
+  --font-serif: "Fraunces Variable", Georgia, serif;
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-charcoal-950: #0e0d0c;
+  --color-charcoal-900: #151413;
+  --color-charcoal-850: #1b1918;
+  --color-charcoal-800: #242220;
+  --color-charcoal-700: #322f2b;
+  --color-charcoal-600: #46423c;
+  --color-charcoal-500: #655f56;
+  --color-charcoal-400: #938b7d;
+  --color-charcoal-300: #b9b1a2;
+  --color-charcoal-200: #dad3c6;
+  --color-charcoal-100: #efe9df;
+  --color-charcoal-50: #f7f4ed;
+
+  --color-amber-projector: #e8a33d;
+  --color-amber-projector-hover: #f0b252;
+  --color-amber-projector-muted: #7d541b;
+  --color-amber-projector-subtle: #241a0e;
+
+  --color-sentiment-pos: #6f9863;
+  --color-sentiment-pos-bg: #182215;
+  --color-sentiment-pos-border: #2c3d26;
+
+  --color-sentiment-neu: #8a8782;
+  --color-sentiment-neu-bg: #1c1b1a;
+  --color-sentiment-neu-border: #33312e;
+
+  --color-sentiment-neg: #b05549;
+  --color-sentiment-neg-bg: #261614;
+  --color-sentiment-neg-border: #48231f;
+
+  --ease-cinematic-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-cinematic-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: dark;
+    background-color: var(--color-charcoal-950);
+    color: var(--color-charcoal-100);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--color-charcoal-950);
+    color: var(--color-charcoal-100);
+    margin: 0;
+  }
+
+  ::selection {
+    background-color: var(--color-amber-projector);
+    color: var(--color-charcoal-950);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-amber-projector);
+    outline-offset: 2px;
+  }
+}
+
+/* Film greni dokusu - SVG noise */
+.film-grain {
+  position: relative;
+}
+
+.film-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Liste ilk yükleniş kademeli giriş animasyonu */
+@keyframes card-entrance {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card-entrance {
+  animation: card-entrance 320ms var(--ease-cinematic-out) both;
+}
+
+/* Yıldız seçim yay hissi */
+@keyframes star-bounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-star-bounce {
+  animation: star-bounce 220ms var(--ease-cinematic-out);
+}
+
+/* Duygu çubuğu dolma animasyonu */
+@keyframes sentiment-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-sentiment-fill {
+  transform-origin: left;
+  animation: sentiment-fill 600ms var(--ease-cinematic-out) both;
+}
+
+/* Buton basma hissi */
+.btn-pressable {
+  transition: transform 160ms var(--ease-cinematic-out), background-color 160ms var(--ease-cinematic-out), border-color 160ms var(--ease-cinematic-out), color 160ms var(--ease-cinematic-out);
+}
+
+.btn-pressable:active {
+  transform: scale(0.97);
+}
+
+/* Kart hover: yalnızca fare olan cihazlarda */
+@media (hover: hover) and (pointer: fine) {
+  .movie-card-hover {
+    transition: transform 200ms var(--ease-cinematic-out);
+  }
+  .movie-card-hover:hover .movie-card-poster {
+    transform: scale(1.03);
+  }
+}
+
+/* Azaltılmış hareket tercihi */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .animate-card-entrance {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .animate-star-bounce {
+    animation: none !important;
+    transform: none !important;
+  }
+  .animate-sentiment-fill {
+    animation: none !important;
+    transform: none !important;
+  }
+}
