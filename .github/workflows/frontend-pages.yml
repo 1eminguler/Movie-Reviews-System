@@ -21,6 +21,8 @@ concurrency:
 
 jobs:
   build:
+    # Yayını yalnızca depo sahibinin tetiklediği çalışmalar yapar; diğer katkıcıların push'ları atlanır
+    if: github.actor == github.repository_owner
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -56,6 +58,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.actor == github.repository_owner && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
