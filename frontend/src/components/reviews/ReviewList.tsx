@@ -37,7 +37,7 @@ export default function ReviewList({
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={`skel-rev-${i}`}
-            className="rounded-[10px] border border-line bg-panel p-4 space-y-3"
+            className="space-y-3 border-b border-line/70 py-7"
           >
             <div className="flex items-center justify-between gap-3">
               <Skeleton variant="text" className="h-4 w-32" />
@@ -63,7 +63,7 @@ export default function ReviewList({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <div className="space-y-3">
+      <div>
         {reviews.map((review) => (
           <ReviewItem
             key={review.id}

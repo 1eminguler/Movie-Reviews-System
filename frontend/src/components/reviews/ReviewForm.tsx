@@ -50,7 +50,7 @@ export default function ReviewForm({
   if (!isAuthenticated) {
     return (
       <div
-        className={`rounded-[10px] border border-line bg-panel p-6 ${className}`}
+        className={`rounded-2xl bg-panel p-7 ${className}`}
       >
         <p className="text-[15px] text-ink">
           Sign in to rate and review this film.
@@ -59,14 +59,14 @@ export default function ReviewForm({
           <Link
             to="/login"
             state={{ from: location.pathname }}
-            className="inline-flex items-center rounded-[8px] bg-ink px-4 py-2 text-[15px] font-medium text-night transition-opacity hover:opacity-90"
+            className="btn btn-primary"
           >
             Sign in
           </Link>
           <Link
             to="/register"
             state={{ from: location.pathname }}
-            className="inline-flex items-center rounded-[8px] border border-line bg-transparent px-4 py-2 text-[15px] font-medium text-ink transition-colors hover:border-mute"
+            className="btn btn-ghost"
           >
             Create account
           </Link>
@@ -123,10 +123,10 @@ export default function ReviewForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`rounded-[10px] border border-line bg-panel p-5 ${className}`}
+      className={`rounded-2xl bg-panel p-7 ${className}`}
     >
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-display text-[17px] font-semibold text-ink">
+        <h3 className="font-display text-[26px] leading-none text-ink">
           {isEditing ? 'Edit your review' : 'Write a review'}
         </h3>
         {onCancel && (
@@ -173,7 +173,7 @@ export default function ReviewForm({
           value={reviewText}
           onChange={(e) => setReviewText(e.target.value)}
           placeholder="Share your thoughts on the film…"
-          className="mt-1.5 w-full rounded-[8px] border border-line bg-night p-3 text-[15px] text-ink placeholder-mute focus:border-ink focus:outline-none"
+          className="field mt-2 bg-night!"
         />
       </div>
 
@@ -188,7 +188,7 @@ export default function ReviewForm({
           <button
             type="submit"
             disabled={isSubmitting || rating === 0}
-            className="inline-flex cursor-pointer items-center rounded-[8px] bg-ink px-4 py-2 text-[15px] font-medium text-night transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
+            className="btn btn-primary"
           >
             {isSubmitting
               ? 'Saving…'
@@ -201,7 +201,7 @@ export default function ReviewForm({
             <button
               type="button"
               onClick={onCancel}
-              className="inline-flex cursor-pointer items-center rounded-[8px] border border-line bg-transparent px-4 py-2 text-[15px] font-medium text-ink transition-colors hover:border-mute"
+              className="btn btn-ghost"
             >
               Cancel
             </button>
@@ -219,14 +219,14 @@ export default function ReviewForm({
                   type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="cursor-pointer rounded-[8px] bg-neg px-3 py-1.5 text-[13px] font-medium text-night hover:opacity-90 disabled:opacity-50"
+                  className="btn btn-sm bg-neg text-night"
                 >
                   {isDeleting ? 'Deleting…' : 'Confirm delete'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="cursor-pointer rounded-[8px] border border-line px-3 py-1.5 text-[13px] text-ink hover:border-mute"
+                  className="btn btn-ghost btn-sm"
                 >
                   Cancel
                 </button>

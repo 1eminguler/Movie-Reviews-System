@@ -46,15 +46,15 @@ export default function ReviewItem({
 
   return (
     <article
-      className={`rounded-[10px] border border-line bg-panel p-4 ${className}`}
+      className={`border-b border-line/70 py-7 first:pt-0 ${className}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-baseline gap-2.5">
-          <span className="text-[15px] font-medium text-ink">
+          <span className="font-display text-[22px] leading-none text-ink">
             {review.username}
           </span>
           {isOwner && (
-            <span className="rounded-[6px] border border-line px-1.5 py-0.5 text-[13px] text-butter">
+            <span className="rounded-[6px] border border-line px-1.5 py-0.5 text-[13px] text-ink">
               You
             </span>
           )}
@@ -75,7 +75,7 @@ export default function ReviewItem({
       </div>
 
       {text ? (
-        <div className="mt-3 max-w-[72ch] text-[15px] leading-relaxed text-ink">
+        <div className="mt-4 max-w-[68ch] text-[17px] leading-relaxed text-ink/90">
           <p className="whitespace-pre-line">{displayText}</p>
           {isLong && (
             <button
@@ -94,13 +94,13 @@ export default function ReviewItem({
       )}
 
       {isOwner && (onEdit || onDelete) && (
-        <div className="mt-3 pt-3 border-t border-line flex items-center justify-end gap-2 text-[13px]">
+        <div className="mt-4 flex items-center justify-end gap-2 text-[13px]">
           {onEdit && (
             <button
               type="button"
               onClick={() => onEdit(review)}
               disabled={isDeleting}
-              className="cursor-pointer rounded-[8px] border border-line px-3 py-1 text-ink transition-colors hover:border-mute disabled:opacity-50"
+              className="btn btn-ghost btn-sm"
             >
               Edit
             </button>
@@ -111,7 +111,7 @@ export default function ReviewItem({
               type="button"
               onClick={() => onDelete(review)}
               disabled={isDeleting}
-              className="cursor-pointer rounded-[8px] border border-line px-3 py-1 text-neg transition-colors hover:border-neg disabled:opacity-50"
+              className="btn btn-ghost btn-sm text-neg"
             >
               {isDeleting ? 'Deleting…' : 'Delete'}
             </button>
