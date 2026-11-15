@@ -7,5 +7,12 @@ export async function startMockWorker(): Promise<void> {
     import('./demo-data.json'),
   ])
   const worker = setupWorker(...createHandlers(data.default as Parameters<typeof createHandlers>[0]))
-  await worker.start({ quiet: true })
+  // Servis çalışanı sitenin yayın yolundan yüklenir (Pages'te /Movie-Reviews-System/)
+  await worker.start({
+    quiet: true,
+    serviceWorker: {
+      url: `${import.meta.env.BASE_URL}mockServiceWorker.js`,
+      options: { scope: import.meta.env.BASE_URL },
+    },
+  })
 }

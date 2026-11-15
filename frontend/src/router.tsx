@@ -31,4 +31,7 @@ export const router = createBrowserRouter([
       { path: '*', element: <NotFoundPage /> },
     ],
   },
-])
+], {
+  // Pages'te uygulama bir alt klasörde çalışır; yerelde BASE_URL '/' olduğundan değişiklik yok
+  basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/',
+})
