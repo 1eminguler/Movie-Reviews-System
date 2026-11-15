@@ -1,299 +1,162 @@
-import { type FormEvent, useState } from 'react'
-import {
-  Link,
-  NavLink,
-  useLocation,
-  useNavigate,
-  useSearchParams,
-} from 'react-router-dom'
+import { AnimatePresence, motion } from 'motion/react'
+import { type FormEvent, useEffect, useState } from 'react'
+import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth.ts'
 
-export default function Navbar() {
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-mute">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  )
+}
+
+export default function Navbar({ overlay = false }: { overlay?: boolean }) {
   const { isAuthenticated, isLoading, logout, user } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  const urlSearch =
-    location.pathname === '/movies' ? (searchParams.get('search') ?? '') : ''
+  const urlSearch = location.pathname === '/movies' ? (searchParams.get('search') ?? '') : ''
   const [searchQuery, setSearchQuery] = useState(urlSearch)
   const [prevUrlSearch, setPrevUrlSearch] = useState(urlSearch)
-
   if (urlSearch !== prevUrlSearch) {
     setPrevUrlSearch(urlSearch)
     setSearchQuery(urlSearch)
   }
 
-  const closeMenu = () => setMobileMenuOpen(false)
+  // Görselin üzerindeyken şeffaf, sayfa kayınca koyu cam zemine geçer
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
-  // Aktif bağlantı yalnızca metin rengini değiştirir
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `text-[15px] font-medium whitespace-nowrap transition-colors ${
-      isActive ? 'text-butter' : 'text-mute hover:text-ink'
-    }`
+  const closeMenu = () => setMobileMenuOpen(false)
+  const solid = !overlay || scrolled || mobileMenuOpen
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault()
     const trimmed = searchQuery.trim()
     closeMenu()
-    if (trimmed) {
-      navigate(`/movies?search=${encodeURIComponent(trimmed)}`)
-    } else {
-      navigate('/movies')
-    }
+    navigate(trimmed ? `/movies?search=${encodeURIComponent(trimmed)}` : '/movies')
   }
 
-  return (
-    <header className="sticky top-0 z-30 border-b border-line bg-night">
-      <nav
-        role="navigation"
-        aria-label="Primary navigation"
-        className="page-gutter flex items-center justify-between gap-6 py-3.5"
-      >
-        {/* Sol: Marka ve ana bağlantılar */}
-        <div className="flex items-center gap-6 shrink-0">
-          <Link
-            to="/"
-            onClick={closeMenu}
-            className="font-display text-[22px] font-bold tracking-[-0.02em] text-ink whitespace-nowrap rounded"
-          >
-            Movie Reviews
-          </Link>
+  const navClass = ({ isActive }: { isActive: boolean }) => `nav-word ${isActive ? 'active' : ''}`
 
-          <div className="hidden md:flex items-center gap-6">
-            <NavLink to="/" end className={navLinkClass}>
-              Home
-            </NavLink>
-            <NavLink to="/movies" className={navLinkClass}>
-              Movies
-            </NavLink>
-          </div>
+  const searchForm = (id: string) => (
+    <form onSubmit={handleSearchSubmit} role="search" className="relative">
+      <label htmlFor={id} className="sr-only">Search movies</label>
+      <SearchIcon />
+      <input
+        id={id}
+        type="search"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="Search films"
+        className={`h-11 w-full rounded-full border pl-11 pr-4 text-[15px] text-ink placeholder:text-mute transition-colors focus:border-ink/60 focus:outline-none ${
+          solid ? 'border-line bg-panel' : 'border-white/15 bg-black/35 backdrop-blur-md'
+        }`}
+      />
+    </form>
+  )
+
+  return (
+    <header
+      className={`fixed inset-x-0 top-0 z-40 transition-[background-color,border-color] duration-300 ${
+        solid ? 'border-b border-line bg-night/85 backdrop-blur-xl' : 'border-b border-transparent bg-gradient-to-b from-black/60 to-transparent'
+      }`}
+    >
+      <nav aria-label="Primary navigation" className="page-gutter flex h-[72px] items-center gap-8">
+        <Link to="/" onClick={closeMenu} className="font-display shrink-0 text-[26px] leading-none text-ink">
+          Movie <em>Reviews</em>
+        </Link>
+
+        <div className="hidden items-center gap-7 md:flex">
+          <NavLink to="/" end className={navClass}>Home</NavLink>
+          <NavLink to="/movies" end className={navClass}>Movies</NavLink>
         </div>
 
-        {/* Orta: Genişleyen arama kutusu (masaüstü) */}
-        <form
-          onSubmit={handleSearchSubmit}
-          className="hidden md:block min-w-0 flex-1"
-          role="search"
-        >
-          <div className="relative">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mute"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search movies…"
-              aria-label="Search movies"
-              className="w-full rounded-[8px] border border-line bg-panel py-1.5 pl-9 pr-3 text-[15px] text-ink placeholder-mute focus:border-ink focus:outline-none"
-            />
-          </div>
-        </form>
+        <div className="ml-auto hidden w-[min(460px,34vw)] md:block">{searchForm('nav-search')}</div>
 
-        {/* Sağ: Oturum alanı (masaüstü) */}
-        <div className="hidden md:flex items-center gap-4 shrink-0">
+        <div className="hidden shrink-0 items-center gap-6 md:flex">
           {isLoading ? (
-            <div className="h-8 w-24 rounded-[8px] bg-panel" />
+            <div className="h-10 w-32 rounded-full bg-panel" />
           ) : isAuthenticated ? (
-            <div className="flex items-center gap-4">
-              <NavLink to="/profile" className={navLinkClass}>
-                Profile
-              </NavLink>
-              <span className="text-[15px] text-ink">{user?.username}</span>
-              <button
-                type="button"
-                onClick={logout}
-                className="cursor-pointer rounded-[8px] border border-line bg-transparent px-3 py-1.5 text-[13px] font-medium text-ink transition-colors hover:border-mute"
-              >
-                Sign out
-              </button>
-            </div>
+            <>
+              <NavLink to="/profile" className={navClass}>{user?.username ?? 'Profile'}</NavLink>
+              <button type="button" onClick={logout} className="btn btn-ghost btn-sm">Sign out</button>
+            </>
           ) : (
-            <div className="flex items-center gap-4">
-              <NavLink
-                to="/login"
-                state={{ from: location.pathname }}
-                className={navLinkClass}
-              >
-                Sign in
-              </NavLink>
-              <Link
-                to="/register"
-                state={{ from: location.pathname }}
-                className="inline-flex items-center rounded-[8px] bg-ink px-3.5 py-1.5 text-[15px] font-medium text-night transition-opacity hover:opacity-90"
-              >
-                Create account
-              </Link>
-            </div>
+            <>
+              <NavLink to="/login" state={{ from: location.pathname }} className={navClass}>Sign in</NavLink>
+              <Link to="/register" state={{ from: location.pathname }} className="btn btn-light btn-sm">Create account</Link>
+            </>
           )}
         </div>
 
-        {/* Mobil menü açma düğmesi */}
-        <div className="flex md:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
-            aria-expanded={mobileMenuOpen}
-            aria-label="Toggle menu"
-            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[8px] border border-line bg-transparent text-ink hover:border-mute"
-          >
-            {mobileMenuOpen ? (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18 18 6M6 6l12 12"
-                />
-              </svg>
-            ) : (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-                />
-              </svg>
-            )}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-menu"
+          aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+          className="ml-auto inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 text-ink md:hidden"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="h-5 w-5" aria-hidden="true">
+            {mobileMenuOpen ? <path strokeLinecap="round" d="M6 18 18 6M6 6l12 12" /> : <path strokeLinecap="round" d="M4 8h16M4 16h16" />}
+          </svg>
+        </button>
       </nav>
 
-      {/* Mobil arama çubuğu */}
-      <div className="md:hidden page-gutter pb-3">
-        <form onSubmit={handleSearchSubmit} role="search">
-          <div className="relative">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mute"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search movies…"
-              aria-label="Search movies"
-              className="w-full rounded-[8px] border border-line bg-panel py-1.5 pl-9 pr-3 text-[15px] text-ink placeholder-mute focus:border-ink focus:outline-none"
-            />
-          </div>
-        </form>
-      </div>
+      <div className="page-gutter pb-3 md:hidden">{searchForm('nav-search-mobile')}</div>
 
-      {/* Mobil açılır menü */}
-      {mobileMenuOpen && (
-        <div className="md:hidden page-gutter border-t border-line bg-panel py-4 space-y-4">
-          <div className="flex flex-col gap-2">
-            <NavLink
-              to="/"
-              end
-              onClick={closeMenu}
-              className={({ isActive }) =>
-                `py-1 text-[15px] font-medium ${
-                  isActive ? 'text-butter' : 'text-mute hover:text-ink'
-                }`
-              }
-            >
-              Home
-            </NavLink>
-            <NavLink
-              to="/movies"
-              onClick={closeMenu}
-              className={({ isActive }) =>
-                `py-1 text-[15px] font-medium ${
-                  isActive ? 'text-butter' : 'text-mute hover:text-ink'
-                }`
-              }
-            >
-              Movies
-            </NavLink>
-          </div>
-
-          <div className="border-t border-line pt-3">
-            {isLoading ? null : isAuthenticated ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-[13px] text-mute">
-                  <span>Signed in as</span>
-                  <span className="font-medium text-ink">{user?.username}</span>
-                </div>
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            id="mobile-menu"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+            transition={{ duration: 0.2 }}
+            className="page-gutter h-[calc(100svh-128px)] space-y-8 border-t border-line bg-night pt-8 md:hidden"
+          >
+            <div className="flex flex-col gap-2">
+              {[
+                { to: '/', label: 'Home', end: true },
+                { to: '/movies', label: 'Movies', end: true },
+                ...(isAuthenticated ? [{ to: '/profile', label: 'Profile', end: false }] : []),
+              ].map((item) => (
                 <NavLink
-                  to="/profile"
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
                   onClick={closeMenu}
-                  className={({ isActive }) =>
-                    `block py-1 text-[15px] font-medium ${
-                      isActive ? 'text-butter' : 'text-mute hover:text-ink'
-                    }`
-                  }
+                  className={({ isActive }) => `font-display py-1 text-[40px] leading-tight ${isActive ? 'text-ink' : 'text-mute'}`}
                 >
-                  Profile
+                  {item.label}
                 </NavLink>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeMenu()
-                    logout()
-                  }}
-                  className="w-full cursor-pointer rounded-[8px] border border-line bg-transparent py-2 text-[15px] font-medium text-ink hover:border-mute"
-                >
-                  Sign out
+              ))}
+            </div>
+            <div className="flex flex-col gap-3 border-t border-line pt-6">
+              {isLoading ? null : isAuthenticated ? (
+                <button type="button" onClick={() => { closeMenu(); logout() }} className="btn btn-ghost w-full">
+                  Sign out {user?.username}
                 </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <NavLink
-                  to="/login"
-                  state={{ from: location.pathname }}
-                  onClick={closeMenu}
-                  className={({ isActive }) =>
-                    `block rounded-[8px] border border-line py-2 text-center text-[15px] font-medium ${
-                      isActive ? 'text-butter' : 'text-ink'
-                    }`
-                  }
-                >
-                  Sign in
-                </NavLink>
-                <Link
-                  to="/register"
-                  state={{ from: location.pathname }}
-                  onClick={closeMenu}
-                  className="block rounded-[8px] bg-ink py-2 text-center text-[15px] font-medium text-night"
-                >
-                  Create account
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+              ) : (
+                <>
+                  <Link to="/register" state={{ from: location.pathname }} onClick={closeMenu} className="btn btn-light w-full">Create account</Link>
+                  <Link to="/login" state={{ from: location.pathname }} onClick={closeMenu} className="btn btn-ghost w-full">Sign in</Link>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   )
 }

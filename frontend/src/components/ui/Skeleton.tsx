@@ -5,9 +5,9 @@ interface SkeletonProps {
 }
 
 const ROUNDED_MAP = {
-  sm: 'rounded-[6px]',
-  md: 'rounded-[6px]',
-  lg: 'rounded-[10px]',
+  sm: 'rounded-md',
+  md: 'rounded-xl',
+  lg: 'rounded-2xl',
   full: 'rounded-full',
 }
 
@@ -16,7 +16,7 @@ export default function Skeleton({
   rounded = 'md',
   variant = 'rect',
 }: SkeletonProps) {
-  const baseClasses = 'bg-panel border border-line'
+  const baseClasses = 'bg-panel shimmer'
 
   if (variant === 'text') {
     return (
@@ -30,7 +30,7 @@ export default function Skeleton({
   if (variant === 'poster') {
     return (
       <div
-        className={`aspect-[2/3] w-full rounded-[6px] ${baseClasses} ${className}`}
+        className={`aspect-[2/3] w-full rounded-xl ${baseClasses} ${className}`}
         aria-hidden="true"
       />
     )

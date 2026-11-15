@@ -20,10 +20,10 @@ export default function MovieCard({ movie, className = '' }: MovieCardProps) {
       <Link
         to={`/movies/${movie.id}`}
         viewTransition
-        className="movie-card-link block rounded-[6px]"
+        className="movie-card-link block rounded-xl"
         aria-label={`${movie.title}${releaseYear ? ` (${releaseYear})` : ''}`}
       >
-        <div className="movie-card-poster relative">
+        <div className="movie-card-poster relative overflow-hidden rounded-xl">
           <Poster
             path={movie.poster_path}
             title={movie.title}
@@ -31,7 +31,7 @@ export default function MovieCard({ movie, className = '' }: MovieCardProps) {
           />
         </div>
 
-        <div className="mt-2 space-y-1">
+        <div className="mt-3 space-y-1">
           <h3 className="movie-card-title line-clamp-1 text-[15px] font-medium text-ink/90">
             {movie.title}
           </h3>

@@ -34,10 +34,10 @@ export default function Poster({
     return (
       <div
         style={style}
-        className={`relative aspect-[2/3] w-full overflow-hidden rounded-[6px] border border-line bg-panel flex flex-col items-center justify-center p-3 text-center select-none ${className}`}
+        className={`relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-panel outline outline-1 -outline-offset-1 outline-white/5 flex flex-col items-center justify-center p-3 text-center select-none ${className}`}
         aria-label={`${title} poster unavailable`}
       >
-        <span className="font-display text-[22px] font-bold tracking-[-0.02em] text-mute">
+        <span className="font-display text-[28px] text-mute">
           {getInitials(title)}
         </span>
         <span className="mt-2 line-clamp-2 text-[13px] text-mute">
@@ -50,7 +50,7 @@ export default function Poster({
   return (
     <div
       style={style}
-      className={`relative aspect-[2/3] w-full overflow-hidden rounded-[6px] border border-line bg-panel ${className}`}
+      className={`relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-panel outline outline-1 -outline-offset-1 outline-white/5 ${className}`}
     >
       <img
         src={imageUrl}

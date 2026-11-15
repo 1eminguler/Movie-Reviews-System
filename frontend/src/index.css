@@ -1,23 +1,28 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource-variable/fraunces/full';
+@import '@fontsource-variable/fraunces/full-italic';
 @import '@fontsource-variable/geist';
 
-@theme {
-  --font-display: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
+/* Tasarım sistemi: sinema salonu karanlığı, krem metin, kadife kırmızısı tek vurgu rengi */
+@theme static {
+  --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
 
-  --color-night: #10141B;
-  --color-panel: #171C25;
-  --color-line: #262D39;
-  --color-ink: #E8EBF0;
-  --color-mute: #8C95A3;
-  --color-butter: #F4D35E;
+  --color-night: #0a0a0d;
+  --color-panel: #141419;
+  --color-raised: #1c1c22;
+  --color-line: #26262d;
+  --color-ink: #f4efe6;
+  --color-mute: #a19c93;
+  --color-accent: #e63950;
+  --color-butter: #f4efe6;
 
-  --color-pos: #4FB286;
-  --color-neu: #8C95A3;
-  --color-neg: #E06C75;
+  --color-pos: #5cc08f;
+  --color-neu: #a19c93;
+  --color-neg: #ef6f7f;
 
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
@@ -44,8 +49,8 @@
   }
 
   ::selection {
-    background-color: var(--color-ink);
-    color: var(--color-night);
+    background-color: var(--color-accent);
+    color: #fff;
   }
 
   :focus-visible {
@@ -54,9 +59,182 @@
   }
 }
 
-/* Sayfa yatay boşluğu */
+/* Başlık yazı tipi: Fraunces'in büyük optik boyutu ve hafif "wonk" karakteri */
+.font-display {
+  font-variation-settings:
+    'opsz' 144,
+    'SOFT' 30,
+    'WONK' 1;
+  font-weight: 420;
+  letter-spacing: -0.03em;
+}
+.font-display.font-bold,
+.font-display.font-semibold {
+  font-weight: 460;
+}
+.font-display em,
+.font-display i {
+  font-style: italic;
+  font-weight: 380;
+}
+
+/* Sayfa yatay boşluğu: her sayfa tam genişlik, iki kenar eşit */
 .page-gutter {
-  padding-inline: clamp(16px, 2.5vw, 48px);
+  padding-inline: clamp(16px, 3vw, 56px);
+}
+
+/* Gezinme kelimeleri: aktif sayfa yalnızca metin rengiyle ayrılır, hover'da alt çizgi soldan çizilir */
+.nav-word {
+  position: relative;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-mute);
+  white-space: nowrap;
+  transition: color 150ms var(--ease-out);
+}
+.nav-word.active,
+.nav-word[aria-current='page'] {
+  color: var(--color-ink);
+}
+.nav-word::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: -4px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .nav-word:hover {
+    color: var(--color-ink);
+  }
+  .nav-word:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+/* Düğmeler: tek sistem. Hover'da 1px yükselir, basınca iner ve hafifçe küçülür */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 48px;
+  padding-inline: 22px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 150ms var(--ease-out),
+    background-color 150ms var(--ease-out),
+    border-color 150ms var(--ease-out),
+    color 150ms var(--ease-out),
+    opacity 150ms var(--ease-out);
+}
+.btn-sm {
+  height: 40px;
+  padding-inline: 16px;
+  font-size: 14px;
+}
+.btn-primary {
+  background: var(--color-accent);
+  color: #fff;
+}
+.btn-light {
+  background: var(--color-ink);
+  color: var(--color-night);
+}
+.btn-ghost {
+  border: 1px solid color-mix(in srgb, var(--color-ink) 26%, transparent);
+  color: var(--color-ink);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.btn:not(:disabled):active {
+  transform: translateY(1px) scale(0.985);
+  transition-duration: 90ms;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+  .btn-primary:not(:disabled):hover {
+    background: color-mix(in srgb, var(--color-accent) 86%, var(--color-ink));
+  }
+  .btn-light:not(:disabled):hover {
+    background: #fff;
+  }
+  .btn-ghost:not(:disabled):hover {
+    border-color: var(--color-ink);
+    background: color-mix(in srgb, var(--color-ink) 7%, transparent);
+  }
+  .btn:not(:disabled):active {
+    transform: translateY(1px) scale(0.985);
+  }
+  .btn:hover .arrow {
+    transform: translateX(3px);
+  }
+}
+.arrow {
+  transition: transform 150ms var(--ease-out);
+}
+
+/* Form alanları: tek görünüm */
+.field {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+  padding-inline: 16px;
+  font-size: 15px;
+  color: var(--color-ink);
+  transition:
+    border-color 140ms var(--ease-out),
+    box-shadow 140ms var(--ease-out);
+}
+.field::placeholder {
+  color: var(--color-mute);
+}
+.field:focus {
+  outline: none;
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ink) 14%, transparent);
+}
+textarea.field {
+  height: auto;
+  padding-block: 14px;
+  line-height: 1.6;
+}
+
+/* Afiş kartı: hover'da kart 2px kalkar, görsel çerçevesinin içinde 1.03 büyür */
+.movie-card-link .movie-card-poster {
+  transition: transform 180ms var(--ease-out);
+}
+.movie-card-link .movie-card-poster img {
+  transition: transform 600ms var(--ease-out);
+}
+.movie-card-link .movie-card-title {
+  transition: color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .movie-card-link:hover .movie-card-poster {
+    transform: translateY(-2px);
+  }
+  .movie-card-link:hover .movie-card-poster img {
+    transform: scale(1.03);
+  }
+  .movie-card-link:hover .movie-card-title {
+    color: var(--color-ink);
+  }
 }
 
 /* Yıldız seçim tepkisi */
@@ -71,7 +249,6 @@
     transform: scale(1);
   }
 }
-
 .animate-star-bounce {
   animation: star-bounce 220ms var(--ease-out);
 }
@@ -85,29 +262,40 @@
     transform: scaleX(1);
   }
 }
-
 .animate-sentiment-fill {
   transform-origin: left;
-  animation: sentiment-fill 600ms var(--ease-out) both;
+  animation: sentiment-fill 900ms var(--ease-enter) both;
 }
 
-/* Afiş hover tepkisi yalnızca fare destekli cihazlarda */
-@media (hover: hover) and (pointer: fine) {
-  .movie-card-link .movie-card-poster {
-    transition: filter 150ms var(--ease-out);
+/* İskelet yükleme parıltısı */
+@keyframes shimmer {
+  from {
+    background-position: 150% 0;
   }
-  .movie-card-link .movie-card-title {
-    transition: color 150ms var(--ease-out);
-  }
-  .movie-card-link:hover .movie-card-poster {
-    filter: brightness(1.08);
-  }
-  .movie-card-link:hover .movie-card-title {
-    color: var(--color-ink);
+  to {
+    background-position: -50% 0;
   }
 }
+.shimmer {
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgb(255 255 255 / 0.05) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
 
-/* Azaltılmış hareket tercihi */
+/* Kaydırma çubuğunu gizle (yatay şeritler) */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Azaltılmış hareket tercihi: her şey yerinde durur, hiçbir içerik gizli kalmaz */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -115,13 +303,14 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-  .animate-star-bounce {
-    animation: none !important;
-    transform: none !important;
-  }
+  .animate-star-bounce,
   .animate-sentiment-fill {
     animation: none !important;
     transform: none !important;
+  }
+  .shimmer {
+    animation: none !important;
   }
 }
