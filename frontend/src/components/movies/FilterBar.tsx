@@ -11,6 +11,7 @@ interface FilterBarProps {
   onFiltersChange: (newFilters: MovieFilters) => void
   onReset?: () => void
   className?: string
+  showGenres?: boolean
 }
 
 export default function FilterBar({
@@ -18,6 +19,7 @@ export default function FilterBar({
   onFiltersChange,
   onReset,
   className = '',
+  showGenres = true,
 }: FilterBarProps) {
   const { data: genres = [] } = useGenres()
   const [searchInput, setSearchInput] = useState(filters.search ?? '')
@@ -91,7 +93,7 @@ export default function FilterBar({
       <div>
         <label
           htmlFor="filter-search-input"
-          className="block text-[13px] font-medium text-ink mb-2"
+          className="mb-2 block text-[13px] font-medium text-mute"
         >
           Search
         </label>
@@ -101,13 +103,14 @@ export default function FilterBar({
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search films…"
-          className="w-full rounded-[8px] border border-line bg-night px-3 py-2 text-[15px] text-ink placeholder-mute focus:border-ink focus:outline-none"
+          className="field"
         />
       </div>
 
       {/* Tür listesi (tekli seçim) */}
+      {showGenres && (
       <div>
-        <span className="block text-[13px] font-medium text-ink mb-2">
+        <span className="mb-2 block text-[13px] font-medium text-mute">
           Genre
         </span>
         <ul className="space-y-1 max-h-60 overflow-y-auto pr-1">
@@ -117,7 +120,7 @@ export default function FilterBar({
               onClick={() => handleGenreSelect(undefined)}
               className={`w-full cursor-pointer text-left py-1 text-[13px] transition-colors ${
                 filters.genre_id === undefined
-                  ? 'font-medium text-butter'
+                  ? 'font-medium text-ink'
                   : 'text-mute hover:text-ink'
               }`}
             >
@@ -135,7 +138,7 @@ export default function FilterBar({
                   }
                   className={`w-full cursor-pointer text-left py-1 text-[13px] transition-colors ${
                     isSelected
-                      ? 'font-medium text-butter'
+                      ? 'font-medium text-ink'
                       : 'text-mute hover:text-ink'
                   }`}
                 >
@@ -147,9 +150,11 @@ export default function FilterBar({
         </ul>
       </div>
 
+      )}
+
       {/* Yaş sınırı */}
       <div>
-        <span className="block text-[13px] font-medium text-ink mb-2">
+        <span className="mb-2 block text-[13px] font-medium text-mute">
           Age rating
         </span>
         <div className="flex flex-wrap gap-1.5">
@@ -161,7 +166,7 @@ export default function FilterBar({
                 type="button"
                 onClick={() => handleCertificationToggle(cert)}
                 aria-pressed={isSelected}
-                className={`cursor-pointer rounded-[8px] border px-2.5 py-1 text-[13px] font-medium transition-colors ${
+                className={`h-10 min-w-12 cursor-pointer rounded-full border px-3.5 text-[14px] font-medium transition-colors ${
                   isSelected
                     ? 'border-ink bg-ink text-night'
                     : 'border-line bg-transparent text-mute hover:border-mute hover:text-ink'
@@ -176,7 +181,7 @@ export default function FilterBar({
 
       {/* Yıl aralığı */}
       <div>
-        <span className="block text-[13px] font-medium text-ink mb-2">
+        <span className="mb-2 block text-[13px] font-medium text-mute">
           Year
         </span>
         <div className="flex items-center gap-2">
@@ -188,7 +193,7 @@ export default function FilterBar({
             aria-label="Year from"
             value={filters.year_min ?? ''}
             onChange={(e) => handleNumberChange('year_min', e.target.value)}
-            className="w-full rounded-[8px] border border-line bg-night px-2.5 py-1.5 text-[13px] tabular-nums text-ink placeholder-mute focus:border-ink focus:outline-none"
+            className="field tabular-nums"
           />
           <span className="text-mute" aria-hidden="true">
             –
@@ -201,14 +206,14 @@ export default function FilterBar({
             aria-label="Year to"
             value={filters.year_max ?? ''}
             onChange={(e) => handleNumberChange('year_max', e.target.value)}
-            className="w-full rounded-[8px] border border-line bg-night px-2.5 py-1.5 text-[13px] tabular-nums text-ink placeholder-mute focus:border-ink focus:outline-none"
+            className="field tabular-nums"
           />
         </div>
       </div>
 
       {/* Süre aralığı */}
       <div>
-        <span className="block text-[13px] font-medium text-ink mb-2">
+        <span className="mb-2 block text-[13px] font-medium text-mute">
           Runtime (min)
         </span>
         <div className="flex items-center gap-2">
@@ -220,7 +225,7 @@ export default function FilterBar({
             aria-label="Runtime minimum minutes"
             value={filters.runtime_min ?? ''}
             onChange={(e) => handleNumberChange('runtime_min', e.target.value)}
-            className="w-full rounded-[8px] border border-line bg-night px-2.5 py-1.5 text-[13px] tabular-nums text-ink placeholder-mute focus:border-ink focus:outline-none"
+            className="field tabular-nums"
           />
           <span className="text-mute" aria-hidden="true">
             –
@@ -233,7 +238,7 @@ export default function FilterBar({
             aria-label="Runtime maximum minutes"
             value={filters.runtime_max ?? ''}
             onChange={(e) => handleNumberChange('runtime_max', e.target.value)}
-            className="w-full rounded-[8px] border border-line bg-night px-2.5 py-1.5 text-[13px] tabular-nums text-ink placeholder-mute focus:border-ink focus:outline-none"
+            className="field tabular-nums"
           />
         </div>
       </div>
@@ -243,7 +248,7 @@ export default function FilterBar({
         type="button"
         onClick={handleReset}
         disabled={!hasActiveFilters}
-        className="w-full cursor-pointer rounded-[8px] border border-line bg-transparent py-2 text-[13px] font-medium text-ink transition-colors hover:border-mute disabled:cursor-default disabled:opacity-40"
+        className="btn btn-ghost w-full"
       >
         Reset filters
       </button>

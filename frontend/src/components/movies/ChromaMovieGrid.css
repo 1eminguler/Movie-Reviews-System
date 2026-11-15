@@ -1,0 +1,84 @@
+/* React Bits ChromaGrid tekniğinden uyarlandı: afişler gri durur, imleci izleyen ışık rengi geri getirir */
+.chroma-movies {
+  --chroma-x: -9999px;
+  --chroma-y: -9999px;
+  --chroma-power: 0;
+  --chroma-r: 280px;
+  position: relative;
+}
+
+.chroma-movies__poster {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--color-panel);
+  outline: 1px solid rgb(255 255 255 / 0.05);
+  outline-offset: -1px;
+  transition: transform 180ms var(--ease-out);
+}
+
+.chroma-movies__poster img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 600ms var(--ease-out);
+}
+
+.chroma-movies__color,
+.chroma-movies__glow {
+  display: none;
+}
+
+/* Fare olan cihazlarda gri + ışık; dokunmatikte afişler renkli kalır */
+@media (hover: hover) and (pointer: fine) {
+  .chroma-movies__mono {
+    filter: grayscale(1) brightness(0.82);
+  }
+  .chroma-movies__color,
+  .chroma-movies__glow {
+    display: block;
+    -webkit-mask-image: radial-gradient(
+      circle var(--chroma-r) at calc(var(--chroma-x) - var(--chroma-ox, 0px)) calc(var(--chroma-y) - var(--chroma-oy, 0px)),
+      #000 0%,
+      rgb(0 0 0 / 0.85) 35%,
+      rgb(0 0 0 / 0.35) 65%,
+      transparent 100%
+    );
+    mask-image: radial-gradient(
+      circle var(--chroma-r) at calc(var(--chroma-x) - var(--chroma-ox, 0px)) calc(var(--chroma-y) - var(--chroma-oy, 0px)),
+      #000 0%,
+      rgb(0 0 0 / 0.85) 35%,
+      rgb(0 0 0 / 0.35) 65%,
+      transparent 100%
+    );
+  }
+  .chroma-movies__color {
+    opacity: var(--chroma-power);
+  }
+  .chroma-movies__glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(120% 60% at 50% 110%, rgb(230 57 80 / 0.35), transparent 70%);
+    opacity: var(--chroma-power);
+  }
+  .chroma-movies__card:hover .chroma-movies__poster {
+    transform: translateY(-2px);
+  }
+  .chroma-movies__card:hover .chroma-movies__poster img {
+    transform: scale(1.03);
+  }
+  .chroma-movies__card:hover .chroma-movies__title {
+    color: var(--color-ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chroma-movies__poster,
+  .chroma-movies__poster img {
+    transition: none;
+  }
+}

@@ -1,17 +1,15 @@
-import { useCallback, useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import Counter from '../components/bits/Counter.tsx'
+import { RiseWords } from '../components/motion/Reveal.tsx'
+import ChromaMovieGrid from '../components/movies/ChromaMovieGrid.tsx'
 import FilterBar from '../components/movies/FilterBar.tsx'
-import MovieGrid from '../components/movies/MovieGrid.tsx'
 import EmptyState from '../components/ui/EmptyState.tsx'
 import ErrorState from '../components/ui/ErrorState.tsx'
 import Pagination from '../components/ui/Pagination.tsx'
-import { useMovies } from '../hooks/useMovies.ts'
-import {
-  type Certification,
-  MOVIE_SORTS,
-  type MovieFilters,
-  type MovieSort,
-} from '../types.ts'
+import { useGenres, useMovies } from '../hooks/useMovies.ts'
+import { type Certification, MOVIE_SORTS, type MovieFilters, type MovieSort } from '../types.ts'
 
 const PAGE_SIZE = 24
 
@@ -24,40 +22,27 @@ const SORT_LABELS: Record<MovieSort, string> = {
 
 export default function MoviesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const genresQuery = useGenres()
 
   // URL arama parametrelerini MovieFilters nesnesine çevir
   const filters = useMemo<MovieFilters>(() => {
-    const search = searchParams.get('search') ?? undefined
-    const genreIdStr = searchParams.get('genre_id')
-    const genre_id = genreIdStr ? Number(genreIdStr) : undefined
-    const cert = (searchParams.get('certification') ?? undefined) as
-      | Certification
-      | undefined
-    const yMin = searchParams.get('year_min')
-    const year_min = yMin ? Number(yMin) : undefined
-    const yMax = searchParams.get('year_max')
-    const year_max = yMax ? Number(yMax) : undefined
-    const rMin = searchParams.get('runtime_min')
-    const runtime_min = rMin ? Number(rMin) : undefined
-    const rMax = searchParams.get('runtime_max')
-    const runtime_max = rMax ? Number(rMax) : undefined
-    const sort = (searchParams.get('sort') ?? 'review_count') as MovieSort
-    const order = (searchParams.get('order') ?? 'desc') as 'asc' | 'desc'
+    const num = (key: string) => {
+      const v = searchParams.get(key)
+      return v ? Number(v) : undefined
+    }
     const pageStr = searchParams.get('page')
-    const page = pageStr ? Math.max(1, Number(pageStr)) : 1
-
     return {
-      search,
-      genre_id,
-      certification: cert,
-      year_min,
-      year_max,
-      runtime_min,
-      runtime_max,
-      sort,
-      order,
-      page,
+      search: searchParams.get('search') ?? undefined,
+      genre_id: num('genre_id'),
+      certification: (searchParams.get('certification') ?? undefined) as Certification | undefined,
+      year_min: num('year_min'),
+      year_max: num('year_max'),
+      runtime_min: num('runtime_min'),
+      runtime_max: num('runtime_max'),
+      sort: (searchParams.get('sort') ?? 'review_count') as MovieSort,
+      order: (searchParams.get('order') ?? 'desc') as 'asc' | 'desc',
+      page: pageStr ? Math.max(1, Number(pageStr)) : 1,
       page_size: PAGE_SIZE,
     }
   }, [searchParams])
@@ -65,202 +50,190 @@ export default function MoviesPage() {
   const { data, isPending, isError, error, refetch } = useMovies(filters)
 
   const handleFiltersChange = useCallback(
-    (newFilters: MovieFilters) => {
-      const nextParams = new URLSearchParams()
-
-      if (newFilters.search) nextParams.set('search', newFilters.search)
-      if (newFilters.genre_id)
-        nextParams.set('genre_id', String(newFilters.genre_id))
-      if (newFilters.certification)
-        nextParams.set('certification', newFilters.certification)
-      if (newFilters.year_min)
-        nextParams.set('year_min', String(newFilters.year_min))
-      if (newFilters.year_max)
-        nextParams.set('year_max', String(newFilters.year_max))
-      if (newFilters.runtime_min)
-        nextParams.set('runtime_min', String(newFilters.runtime_min))
-      if (newFilters.runtime_max)
-        nextParams.set('runtime_max', String(newFilters.runtime_max))
-      if (newFilters.sort) nextParams.set('sort', newFilters.sort)
-      if (newFilters.order) nextParams.set('order', newFilters.order)
-      if (newFilters.page && newFilters.page > 1) {
-        nextParams.set('page', String(newFilters.page))
-      }
-
-      setSearchParams(nextParams)
+    (next: MovieFilters) => {
+      const params = new URLSearchParams()
+      if (next.search) params.set('search', next.search)
+      if (next.genre_id) params.set('genre_id', String(next.genre_id))
+      if (next.certification) params.set('certification', next.certification)
+      if (next.year_min) params.set('year_min', String(next.year_min))
+      if (next.year_max) params.set('year_max', String(next.year_max))
+      if (next.runtime_min) params.set('runtime_min', String(next.runtime_min))
+      if (next.runtime_max) params.set('runtime_max', String(next.runtime_max))
+      if (next.sort) params.set('sort', next.sort)
+      if (next.order) params.set('order', next.order)
+      if (next.page && next.page > 1) params.set('page', String(next.page))
+      setSearchParams(params)
     },
     [setSearchParams],
   )
 
-  const handleResetFilters = useCallback(() => {
+  const handleReset = useCallback(() => {
     setSearchParams(new URLSearchParams())
-    setMobileFiltersOpen(false)
+    setDrawerOpen(false)
   }, [setSearchParams])
 
-  const handlePageChange = (newPage: number) => {
-    handleFiltersChange({ ...filters, page: newPage })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  // Çekmece açıkken Esc kapatır, sayfa kaymaz
+  useEffect(() => {
+    if (!drawerOpen) return undefined
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDrawerOpen(false)
+    document.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [drawerOpen])
 
-  const handleSortChange = (nextSort: MovieSort) => {
-    handleFiltersChange({ ...filters, sort: nextSort, page: 1 })
-  }
-
-  const handleOrderToggle = () => {
-    const nextOrder = filters.order === 'asc' ? 'desc' : 'asc'
-    handleFiltersChange({
-      ...filters,
-      sort: filters.sort ?? 'review_count',
-      order: nextOrder,
-      page: 1,
-    })
+  const handlePageChange = (page: number) => {
+    handleFiltersChange({ ...filters, page })
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
   }
 
   const movies = data?.items ?? []
   const total = data?.total ?? 0
-  const currentPage = filters.page ?? 1
+  const genres = genresQuery.data ?? []
+  const activeGenre = genres.find((g) => g.id === filters.genre_id)
+  const extraFilterCount = [filters.search, filters.certification, filters.year_min, filters.year_max, filters.runtime_min, filters.runtime_max].filter(Boolean).length
+
+  const genreButton = (id: number | undefined, label: string) => {
+    const isActive = filters.genre_id === id
+    return (
+      <button
+        key={label}
+        type="button"
+        aria-pressed={isActive}
+        onClick={() => handleFiltersChange({ ...filters, genre_id: id, page: 1 })}
+        className={`font-display shrink-0 cursor-pointer whitespace-nowrap py-2 text-[clamp(20px,1.7vw,26px)] leading-none transition-colors duration-150 ${
+          isActive ? 'text-ink' : 'text-mute/70 hover:text-ink'
+        }`}
+      >
+        {label}
+      </button>
+    )
+  }
 
   return (
-    <div className="flex flex-col md:flex-row items-start gap-6">
-      {/* Masaüstü yapışkan yan filtre paneli */}
-      <aside className="hidden md:block w-[260px] shrink-0 sticky top-20 rounded-[10px] border border-line bg-panel p-4">
-        <FilterBar
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          onReset={handleResetFilters}
-        />
-      </aside>
+    <div className="pb-8">
+      {/* Başlık: sayfa adı ve filtreye göre yuvarlanan film sayısı */}
+      <header className="page-gutter flex flex-wrap items-end justify-between gap-x-10 gap-y-4 pt-10 md:pt-14">
+        <h1 className="font-display text-[clamp(56px,9vw,148px)] leading-[0.88]">
+          {activeGenre ? <RiseWords key={activeGenre.id} text={activeGenre.name} /> : <RiseWords text="Movies" />}
+        </h1>
+        <p className="pb-3 text-[17px] text-mute" aria-live="polite">
+          <span className="font-display text-[clamp(32px,3.2vw,48px)] leading-none text-ink">
+            <Counter value={total} fontSize="1em" duration={0.9} intro={false} />
+          </span>{' '}
+          {total === 1 ? 'film' : 'films'}
+          {filters.search && (
+            <>
+              {' '}
+              for <span className="text-ink">&ldquo;{filters.search}&rdquo;</span>
+            </>
+          )}
+        </p>
+      </header>
 
-      {/* Mobil kayar filtre çekmecesi */}
-      {mobileFiltersOpen && (
-        <div
-          className="fixed inset-0 z-50 md:hidden flex"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Filters"
-        >
-          <div
-            className="fixed inset-0 bg-night/80"
-            onClick={() => setMobileFiltersOpen(false)}
-          />
-          <div className="relative z-10 w-[280px] max-w-full h-full overflow-y-auto border-r border-line bg-panel p-4">
-            <div className="mb-4 flex items-center justify-between border-b border-line pb-3">
-              <h2 className="font-display text-[17px] font-semibold text-ink">
-                Filters
-              </h2>
-              <button
-                type="button"
-                onClick={() => setMobileFiltersOpen(false)}
-                aria-label="Close filters"
-                className="cursor-pointer rounded-[8px] border border-line px-2.5 py-1 text-[13px] text-ink hover:border-mute"
-              >
-                Close
-              </button>
-            </div>
-            <FilterBar
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
-              onReset={handleResetFilters}
-            />
+      {/* Yapışkan tür şeridi ve sıralama: alt kenarı zemine erir, çizgi yok */}
+      <div className="sticky top-[128px] z-20 mt-8 bg-gradient-to-b from-night via-night/95 to-night/0 pb-6 md:top-[72px]">
+        <div className="page-gutter flex items-center gap-6 pt-3">
+          <div className="no-scrollbar -my-2 flex min-w-0 flex-1 items-center gap-6 overflow-x-auto [mask-image:linear-gradient(to_right,black_92%,transparent)]">
+            {genreButton(undefined, 'All')}
+            {genres.map((g) => genreButton(g.id, g.name))}
           </div>
-        </div>
-      )}
-
-      {/* Sağ ana alan */}
-      <div className="min-w-0 flex-1 w-full space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setMobileFiltersOpen(true)}
-              className="md:hidden inline-flex cursor-pointer items-center rounded-[8px] border border-line bg-transparent px-3 py-1.5 text-[13px] font-medium text-ink hover:border-mute"
-            >
-              Filters
-            </button>
-
-            <h1 className="font-display text-[22px] font-bold tracking-[-0.02em] text-ink">
-              {isPending && !data ? (
-                'Movies'
-              ) : (
-                <span className="tabular-nums">
-                  {total.toLocaleString('en-US')}{' '}
-                  {total === 1 ? 'film' : 'films'}
-                </span>
-              )}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label htmlFor="movies-sort-select" className="text-[13px] text-mute">
-              Sort
-            </label>
+          <div className="hidden shrink-0 items-center gap-2 lg:flex">
+            <label htmlFor="movies-sort" className="sr-only">Sort by</label>
             <select
-              id="movies-sort-select"
+              id="movies-sort"
               value={filters.sort ?? 'review_count'}
-              onChange={(e) => handleSortChange(e.target.value as MovieSort)}
-              className="rounded-[8px] border border-line bg-panel px-3 py-1.5 text-[13px] text-ink focus:border-ink focus:outline-none"
+              onChange={(e) => handleFiltersChange({ ...filters, sort: e.target.value as MovieSort, page: 1 })}
+              className="field h-11! w-auto! cursor-pointer rounded-full! pr-8"
             >
               {MOVIE_SORTS.map((s) => (
-                <option key={s} value={s}>
-                  {SORT_LABELS[s]}
-                </option>
+                <option key={s} value={s}>{SORT_LABELS[s]}</option>
               ))}
             </select>
-
             <button
               type="button"
-              onClick={handleOrderToggle}
-              aria-label={
-                filters.order === 'asc'
-                  ? 'Ascending order, switch to descending'
-                  : 'Descending order, switch to ascending'
-              }
-              title={filters.order === 'asc' ? 'Ascending' : 'Descending'}
-              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-[8px] border border-line bg-panel text-[15px] text-ink transition-colors hover:border-mute"
+              onClick={() => handleFiltersChange({ ...filters, order: filters.order === 'asc' ? 'desc' : 'asc', page: 1 })}
+              aria-label={filters.order === 'asc' ? 'Ascending order, switch to descending' : 'Descending order, switch to ascending'}
+              className="btn btn-ghost h-11! w-11! px-0!"
             >
-              {filters.order === 'asc' ? '↑' : '↓'}
+              <svg viewBox="0 0 16 16" className={`h-4 w-4 transition-transform duration-200 ${filters.order === 'asc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                <path d="M8 3v10M4 9l4 4 4-4" />
+              </svg>
             </button>
           </div>
+          <button type="button" onClick={() => setDrawerOpen(true)} className="btn btn-ghost btn-sm shrink-0">
+            More filters{extraFilterCount > 0 && <span className="rounded-full bg-accent px-2 text-[12px] text-white">{extraFilterCount}</span>}
+          </button>
         </div>
+      </div>
 
+      <div className="page-gutter">
         {isError ? (
-          <ErrorState
-            error={error}
-            onRetry={() => refetch()}
-            title="Could not load films"
-          />
+          <ErrorState error={error} onRetry={() => refetch()} title="Could not load films" />
         ) : !isPending && movies.length === 0 ? (
           <EmptyState
             title="No films match your filters"
-            description="Try broadening your search or clearing some filters."
-            action={
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="inline-flex cursor-pointer items-center rounded-[8px] border border-line bg-transparent px-4 py-2 text-[15px] font-medium text-ink transition-colors hover:border-mute"
-              >
-                Reset filters
-              </button>
-            }
+            description="Try another genre, or clear the search and filters."
+            action={<button type="button" onClick={handleReset} className="btn btn-ghost">Reset filters</button>}
           />
         ) : (
-          <div className="space-y-6">
-            <MovieGrid
-              movies={movies}
-              isLoading={isPending}
-              skeletonCount={PAGE_SIZE}
-            />
-
-            <Pagination
-              page={currentPage}
-              total={total}
-              pageSize={PAGE_SIZE}
-              onPageChange={handlePageChange}
-              className="pt-4"
-            />
-          </div>
+          <>
+            <ChromaMovieGrid movies={movies} isLoading={isPending} skeletonCount={PAGE_SIZE} />
+            <Pagination page={filters.page ?? 1} total={total} pageSize={PAGE_SIZE} onPageChange={handlePageChange} className="pt-14" />
+          </>
         )}
       </div>
+
+      {/* Ek filtreler çekmecesi: sağdan kayar */}
+      <AnimatePresence>
+        {drawerOpen && (
+          <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="More filters">
+            <motion.div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setDrawerOpen(false)}
+            />
+            <motion.aside
+              className="absolute inset-y-0 right-0 flex w-[min(420px,100vw)] flex-col overflow-y-auto bg-panel p-8"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%', transition: { duration: 0.2 } }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="mb-8 flex items-center justify-between">
+                <h2 className="font-display text-[36px] leading-none">More <em>filters</em></h2>
+                <button type="button" onClick={() => setDrawerOpen(false)} className="btn btn-ghost h-11! w-11! px-0!" aria-label="Close filters">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true"><path strokeLinecap="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+              <div className="mb-6 lg:hidden">
+                <label htmlFor="movies-sort-drawer" className="mb-2 block text-[13px] font-medium text-mute">Sort by</label>
+                <select
+                  id="movies-sort-drawer"
+                  value={filters.sort ?? 'review_count'}
+                  onChange={(e) => handleFiltersChange({ ...filters, sort: e.target.value as MovieSort, page: 1 })}
+                  className="field cursor-pointer"
+                >
+                  {MOVIE_SORTS.map((s) => (
+                    <option key={s} value={s}>{SORT_LABELS[s]}</option>
+                  ))}
+                </select>
+              </div>
+              <FilterBar filters={filters} onFiltersChange={handleFiltersChange} onReset={handleReset} showGenres={false} />
+              <button type="button" onClick={() => setDrawerOpen(false)} className="btn btn-primary mt-8 w-full">
+                Show {total.toLocaleString('en-US')} {total === 1 ? 'film' : 'films'}
+              </button>
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
