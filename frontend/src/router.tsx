@@ -3,12 +3,11 @@ import GuestRoute from './auth/GuestRoute.tsx'
 import ProtectedRoute from './auth/ProtectedRoute.tsx'
 import Layout from './components/layout/Layout.tsx'
 import HomePage from './pages/HomePage.tsx'
-import LoginPage from './pages/LoginPage.tsx'
+import AuthPage from './pages/AuthPage.tsx'
 import MovieDetailPage from './pages/MovieDetailPage.tsx'
 import MoviesPage from './pages/MoviesPage.tsx'
 import NotFoundPage from './pages/NotFoundPage.tsx'
 import ProfilePage from './pages/ProfilePage.tsx'
-import RegisterPage from './pages/RegisterPage.tsx'
 
 export const router = createBrowserRouter([
   {
@@ -21,8 +20,8 @@ export const router = createBrowserRouter([
       {
         element: <GuestRoute />,
         children: [
-          { path: 'login', element: <LoginPage /> },
-          { path: 'register', element: <RegisterPage /> },
+          { path: 'login', element: <AuthPage mode="login" /> },
+          { path: 'register', element: <AuthPage mode="register" /> },
         ],
       },
       {

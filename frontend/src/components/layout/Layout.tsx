@@ -2,9 +2,9 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Footer from './Footer.tsx'
 import Navbar from './Navbar.tsx'
 
-// Ana sayfa ve film detayında üst bar tam ekran görselin üzerine biner
+// Ana sayfa, film detayı ve giriş/kayıt sayfasında üst bar tam ekran sahnenin üzerine biner
 function isOverlayRoute(pathname: string): boolean {
-  return pathname === '/' || /^\/movies\/\d+/.test(pathname)
+  return pathname === '/' || pathname === '/login' || pathname === '/register' || /^\/movies\/\d+/.test(pathname)
 }
 
 export default function Layout() {
