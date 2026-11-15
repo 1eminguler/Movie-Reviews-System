@@ -5,7 +5,7 @@ export default function GuestRoute() {
   const { isAuthenticated, isLoading } = useAuth()
 
   if (isLoading) {
-    return <p className="text-neutral-400">Yükleniyor...</p>
+    return <p className="px-[clamp(16px,2.5vw,48px)] py-10 text-mute">Loading…</p>
   }
 
   if (isAuthenticated) {

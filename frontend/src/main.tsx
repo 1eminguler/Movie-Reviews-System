@@ -16,6 +16,12 @@ const queryClient = new QueryClient({
   },
 })
 
+// VITE_USE_MOCK=true iken backend yerine tarayıcı içindeki demo API kullanılır
+if (import.meta.env.VITE_USE_MOCK === 'true') {
+  const { startMockWorker } = await import('./mocks/browser.ts')
+  await startMockWorker()
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
