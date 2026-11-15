@@ -38,23 +38,30 @@ export default function HeroStage({ picks, index, onIndexChange }: HeroStageProp
     <section className="relative isolate flex h-[100svh] min-h-[680px] flex-col overflow-hidden bg-night pt-[128px] md:pt-[72px]" aria-labelledby="hero-title">
       {/* Sahne ışığı: üst ortadan halkanın üzerine düşer */}
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-        <LightRays
-          raysOrigin="top-center"
-          raysColor="#f4efe6"
-          raysSpeed={reduce ? 0 : 0.6}
-          lightSpread={0.32}
-          rayLength={2.4}
-          raySharpness={0.18}
-          glow={1}
-          haze={0.55}
-          intensity={0.9}
-          fadeDistance={1.1}
-          mouseInfluence={0.08}
-          cursorShadow={false}
-          clickPulse={false}
-          intro={!reduce}
-          maxDevicePixelRatio={1.5}
-        />
+        {reduce ? (
+          // Azaltılmış harekette WebGL çalışmaz; aynı ışık durağan bir CSS degradesiyle verilir
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_38%_70%_at_50%_-8%,rgb(244_239_230/0.28),rgb(244_239_230/0.06)_55%,transparent_80%)]" />
+        ) : (
+          <LightRays
+            raysOrigin="top-center"
+            raysColor="#f4efe6"
+            raysSpeed={0.5}
+            lightSpread={0.32}
+            rayLength={2.4}
+            raySharpness={0.18}
+            glow={1}
+            haze={0.55}
+            intensity={0.9}
+            fadeDistance={1.1}
+            followMouse={false}
+            mouseInfluence={0}
+            cursorShadow={false}
+            clickPulse={false}
+            intro
+            // Yumuşak ışık düşük çözünürlükte de aynı görünür; piksel sayısı ~%85 azalır, fan dönmez
+            maxDevicePixelRatio={0.5}
+          />
+        )}
       </div>
       {/* Alt kenar bir sonraki bölüme yumuşakça erir; keskin çizgi yok */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-48 bg-gradient-to-b from-transparent to-night" aria-hidden="true" />

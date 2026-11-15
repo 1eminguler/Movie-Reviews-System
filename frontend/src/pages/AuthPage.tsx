@@ -6,6 +6,7 @@ import RegisterForm from '../components/auth/RegisterForm.tsx'
 import BorderGlow from '../components/bits/BorderGlow.tsx'
 import DriftWall from '../components/bits/DriftWall.tsx'
 import RubberSegment from '../components/bits/RubberSegment.tsx'
+import DemoNote from '../components/ui/DemoNote.tsx'
 import { RiseWords } from '../components/motion/Reveal.tsx'
 import { TMDB_IMAGE_BASE } from '../config.ts'
 import { useMovies } from '../hooks/useMovies.ts'
@@ -129,6 +130,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
                     <RiseWords key={mode} text={COPY[mode].title} />
                   </h1>
                   <p className="mx-auto mt-3 max-w-[34ch] text-center text-[15px] leading-relaxed text-mute">{COPY[mode].lead}</p>
+                  <DemoNote className="mt-5 text-center" />
                   <div className="mt-8">{mode === 'login' ? <LoginForm from={from} /> : <RegisterForm from={from} />}</div>
                 </motion.div>
               </AnimatePresence>
