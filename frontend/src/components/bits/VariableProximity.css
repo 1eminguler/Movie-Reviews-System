@@ -1,0 +1,4 @@
+/* Sitenin yazı tipini (Fraunces) kullanır; dış font yüklenmez */
+.variable-proximity {
+  font-family: inherit;
+}
