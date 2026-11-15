@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import VariableProximity from '../bits/VariableProximity.tsx'
+import DemoNote from '../ui/DemoNote.tsx'
 
 export default function Footer() {
   const wordmarkRef = useRef<HTMLAnchorElement>(null)
@@ -22,6 +23,7 @@ export default function Footer() {
             />
           </Link>
           <p className="text-[14px] text-mute">CEN317 Engineering Design.</p>
+          <DemoNote />
         </div>
         <div className="flex flex-col gap-4 md:items-end">
           <div className="flex gap-7">
