@@ -21,11 +21,9 @@ export default function SentimentBadge({
   if (status === 'pending') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full border border-charcoal-700 bg-charcoal-850 px-2 py-0.5 text-xs text-charcoal-300 ${className}`}
-        title="Duygu analizi işleniyor"
+        className={`inline-flex items-center gap-1.5 rounded-[6px] border border-line bg-panel px-2 py-0.5 text-[13px] text-mute ${className}`}
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-projector animate-pulse" />
-        Analiz bekleniyor
+        Analysis pending
       </span>
     )
   }
@@ -33,29 +31,29 @@ export default function SentimentBadge({
   if (status === 'failed') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 rounded-full border border-charcoal-800 bg-charcoal-900 px-2 py-0.5 text-xs text-charcoal-400 ${className}`}
+        className={`inline-flex items-center gap-1.5 rounded-[6px] border border-line bg-panel px-2 py-0.5 text-[13px] text-mute ${className}`}
       >
-        Analiz edilemedi
+        Analysis failed
       </span>
     )
   }
 
-  // status === 'done'
   if (!label) {
     return null
   }
 
-  const scoreText = score ? ` (%${Math.round(score * 100)})` : ''
+  const scoreText = score ? `${Math.round(score * 100)}%` : ''
 
   if (label === 'positive') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full border border-sentiment-pos-border bg-sentiment-pos-bg px-2 py-0.5 text-xs font-medium text-sentiment-pos ${className}`}
-        title={`Olumlu duygu${scoreText}`}
+        className={`inline-flex items-center gap-1.5 rounded-[6px] border border-line bg-night px-2 py-0.5 text-[13px] font-medium text-pos ${className}`}
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-sentiment-pos" />
-        Olumlu
-        {score ? <span className="tabular-nums text-[10px] opacity-75">{scoreText}</span> : null}
+        <span className="h-1.5 w-1.5 rounded-full bg-pos" aria-hidden="true" />
+        <span>Positive</span>
+        {scoreText && (
+          <span className="tabular-nums text-mute">{scoreText}</span>
+        )}
       </span>
     )
   }
@@ -63,24 +61,26 @@ export default function SentimentBadge({
   if (label === 'neutral') {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full border border-sentiment-neu-border bg-sentiment-neu-bg px-2 py-0.5 text-xs font-medium text-sentiment-neu ${className}`}
-        title={`Nötr duygu${scoreText}`}
+        className={`inline-flex items-center gap-1.5 rounded-[6px] border border-line bg-night px-2 py-0.5 text-[13px] font-medium text-neu ${className}`}
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-sentiment-neu" />
-        Nötr
-        {score ? <span className="tabular-nums text-[10px] opacity-75">{scoreText}</span> : null}
+        <span className="h-1.5 w-1.5 rounded-full bg-neu" aria-hidden="true" />
+        <span>Neutral</span>
+        {scoreText && (
+          <span className="tabular-nums text-mute">{scoreText}</span>
+        )}
       </span>
     )
   }
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border border-sentiment-neg-border bg-sentiment-neg-bg px-2 py-0.5 text-xs font-medium text-sentiment-neg ${className}`}
-      title={`Olumsuz duygu${scoreText}`}
+      className={`inline-flex items-center gap-1.5 rounded-[6px] border border-line bg-night px-2 py-0.5 text-[13px] font-medium text-neg ${className}`}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-sentiment-neg" />
-      Olumsuz
-      {score ? <span className="tabular-nums text-[10px] opacity-75">{scoreText}</span> : null}
+      <span className="h-1.5 w-1.5 rounded-full bg-neg" aria-hidden="true" />
+      <span>Negative</span>
+      {scoreText && (
+        <span className="tabular-nums text-mute">{scoreText}</span>
+      )}
     </span>
   )
 }

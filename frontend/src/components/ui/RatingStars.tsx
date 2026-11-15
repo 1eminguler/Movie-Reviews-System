@@ -10,7 +10,7 @@ interface RatingStarsProps {
 }
 
 const STAR_SIZES = {
-  sm: 'w-3 h-3 sm:w-3.5 sm:h-3.5',
+  sm: 'w-3.5 h-3.5',
   md: 'w-4.5 h-4.5',
   lg: 'w-6 h-6',
 }
@@ -62,7 +62,11 @@ export default function RatingStars({
       onKeyDown={isInteractive ? handleKeyDown : undefined}
       tabIndex={isInteractive ? 0 : undefined}
       role={isInteractive ? 'radiogroup' : undefined}
-      aria-label={isInteractive ? `Puan seçimi (1-${max})` : `Puan: ${value ?? 0} / ${max}`}
+      aria-label={
+        isInteractive
+          ? `Select rating (1 to ${max})`
+          : `Rating: ${value ?? 0} out of ${max}`
+      }
     >
       <div
         className="flex items-center gap-0.5"
@@ -85,7 +89,7 @@ export default function RatingStars({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.5"
-                className="w-full h-full text-charcoal-600"
+                className="w-full h-full text-line"
                 aria-hidden="true"
               >
                 <path
@@ -95,7 +99,7 @@ export default function RatingStars({
                 />
               </svg>
 
-              {/* Dolu yıldız üst katmanı (kısmi dolum için clip-path) */}
+              {/* Dolu yıldız katmanı */}
               {fillRatio > 0 && (
                 <span
                   className="absolute inset-0 overflow-hidden"
@@ -104,7 +108,7 @@ export default function RatingStars({
                   <svg
                     viewBox="0 0 24 24"
                     fill="currentColor"
-                    className="w-full h-full text-amber-projector"
+                    className="w-full h-full text-butter"
                     aria-hidden="true"
                   >
                     <path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" />
@@ -124,8 +128,8 @@ export default function RatingStars({
               type="button"
               role="radio"
               aria-checked={value === starNumber}
-              aria-label={`${starNumber} yıldız`}
-              className="p-1 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-projector rounded"
+              aria-label={`${starNumber} ${starNumber === 1 ? 'star' : 'stars'}`}
+              className="p-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ink rounded"
               onClick={() => handleSelect(starNumber)}
               onMouseEnter={() => setHoverValue(starNumber)}
             >
@@ -136,7 +140,7 @@ export default function RatingStars({
       </div>
 
       {showValue && value !== null && (
-        <span className="tabular-nums text-xs font-semibold text-charcoal-200">
+        <span className="tabular-nums text-[13px] font-medium text-ink">
           {value.toFixed(1)}
         </span>
       )}

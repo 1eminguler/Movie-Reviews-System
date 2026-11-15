@@ -37,14 +37,11 @@ export default function ReviewList({
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={`skel-rev-${i}`}
-            className="rounded-lg border border-charcoal-800 bg-charcoal-900/40 p-4 space-y-3"
+            className="rounded-[10px] border border-line bg-panel p-4 space-y-3"
           >
-            <div className="flex items-center gap-3">
-              <Skeleton rounded="full" className="h-8 w-8" />
-              <div className="space-y-1">
-                <Skeleton variant="text" className="h-3.5 w-24" />
-                <Skeleton variant="text" className="h-2.5 w-16" />
-              </div>
+            <div className="flex items-center justify-between gap-3">
+              <Skeleton variant="text" className="h-4 w-32" />
+              <Skeleton variant="text" className="h-4 w-24" />
             </div>
             <Skeleton variant="text" className="h-4 w-full" />
             <Skeleton variant="text" className="h-4 w-3/4" />
@@ -57,8 +54,8 @@ export default function ReviewList({
   if (!reviews || reviews.length === 0) {
     return (
       <EmptyState
-        title="Henüz yorum bulunmuyor"
-        description="Bu film için henüz kimse yorum yapmamış. Deneyiminizi ilk paylaşan siz olun!"
+        title="No reviews yet"
+        description="Be the first to share your thoughts on this film."
         className={className}
       />
     )

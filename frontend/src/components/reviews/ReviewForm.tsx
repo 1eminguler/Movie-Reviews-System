@@ -34,7 +34,6 @@ export default function ReviewForm({
   )
   const [prevReview, setPrevReview] = useState(existingReview)
 
-  // Gelen prop değişirse state'i güncelle (React önerilen desen)
   if (existingReview !== prevReview) {
     setPrevReview(existingReview)
     setRating(existingReview?.rating ?? 0)
@@ -51,25 +50,25 @@ export default function ReviewForm({
   if (!isAuthenticated) {
     return (
       <div
-        className={`rounded-lg border border-charcoal-800 bg-charcoal-900/60 p-6 text-center ${className}`}
+        className={`rounded-[10px] border border-line bg-panel p-6 ${className}`}
       >
-        <p className="text-sm text-charcoal-300">
-          Bu filme puan vermek ve deneyiminizi paylaşmak için oturum açmalısınız.
+        <p className="text-[15px] text-ink">
+          Sign in to rate and review this film.
         </p>
-        <div className="mt-4 flex items-center justify-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <Link
             to="/login"
             state={{ from: location.pathname }}
-            className="btn-pressable inline-flex items-center rounded-md bg-amber-projector px-4 py-2 text-xs font-semibold text-charcoal-950 hover:bg-amber-projector-hover"
+            className="inline-flex items-center rounded-[8px] bg-ink px-4 py-2 text-[15px] font-medium text-night transition-opacity hover:opacity-90"
           >
-            Giriş Yap
+            Sign in
           </Link>
           <Link
             to="/register"
             state={{ from: location.pathname }}
-            className="btn-pressable inline-flex items-center rounded-md border border-charcoal-700 bg-charcoal-850 px-4 py-2 text-xs font-medium text-charcoal-200 hover:border-amber-projector/40"
+            className="inline-flex items-center rounded-[8px] border border-line bg-transparent px-4 py-2 text-[15px] font-medium text-ink transition-colors hover:border-mute"
           >
-            Kayıt Ol
+            Create account
           </Link>
         </div>
       </div>
@@ -85,20 +84,21 @@ export default function ReviewForm({
     setFormError(null)
 
     if (rating < 1 || rating > 5) {
-      setFormError('Lütfen 1 ile 5 arasında bir puan seçin.')
+      setFormError('Please select a rating between 1 and 5.')
       return
     }
 
     try {
+      const cleanText = reviewText.trim() ? reviewText.trim() : null
       if (isEditing) {
         await updateMutation.mutateAsync({
           rating,
-          review_text: reviewText.trim() ? reviewText.trim() : null,
+          review_text: cleanText,
         })
       } else {
         await createMutation.mutateAsync({
           rating,
-          review_text: reviewText.trim() ? reviewText.trim() : null,
+          review_text: cleanText,
         })
       }
       onSuccess?.()
@@ -123,93 +123,87 @@ export default function ReviewForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`rounded-lg border border-charcoal-800 bg-charcoal-900/60 p-5 backdrop-blur ${className}`}
+      className={`rounded-[10px] border border-line bg-panel p-5 ${className}`}
     >
-      <div className="flex items-center justify-between">
-        <h3 className="font-serif text-base font-normal text-charcoal-100">
-          {isEditing ? 'Yorumunuzu Güncelleyin' : 'Puan Verin ve Yorum Yazın'}
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="font-display text-[17px] font-semibold text-ink">
+          {isEditing ? 'Edit your review' : 'Write a review'}
         </h3>
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="text-xs text-charcoal-400 hover:text-charcoal-200"
+            className="cursor-pointer text-[13px] text-mute hover:text-ink"
           >
-            Vazgeç
+            Cancel
           </button>
         )}
       </div>
 
       {/* Puan seçimi */}
-      <div className="mt-4 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
-        <span className="text-xs font-medium text-charcoal-300">
-          Puanınız:
-        </span>
-        <div className="flex items-center gap-2">
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <span className="text-[13px] font-medium text-mute">Your rating</span>
+        <div className="flex items-center gap-2.5">
           <RatingStars
             value={rating}
             onChange={(val) => setRating(val)}
             size="lg"
           />
           {rating > 0 ? (
-            <span className="tabular-nums text-xs font-semibold text-amber-projector">
+            <span className="tabular-nums text-[13px] font-medium text-ink">
               {rating} / 5
             </span>
           ) : (
-            <span className="text-xs text-charcoal-500">
-              Yıldıza tıklayarak puan verin
-            </span>
+            <span className="text-[13px] text-mute">Select 1 to 5 stars</span>
           )}
         </div>
       </div>
 
-      {/* Yorum metni alanı */}
+      {/* Yorum metni */}
       <div className="mt-4">
         <label
           htmlFor="review-text-input"
-          className="block text-xs font-medium text-charcoal-300"
+          className="block text-[13px] font-medium text-mute"
         >
-          Yorumunuz <span className="text-charcoal-500">(isteğe bağlı)</span>:
+          Your review (optional)
         </label>
         <textarea
           id="review-text-input"
           rows={3}
           value={reviewText}
           onChange={(e) => setReviewText(e.target.value)}
-          placeholder="Bu film hakkında ne düşünüyorsunuz? Oyunculuklar, senaryo, atmosfer…"
-          className="mt-1.5 w-full rounded-md border border-charcoal-700 bg-charcoal-950 p-3 text-sm text-charcoal-100 placeholder-charcoal-500 transition-colors focus:border-amber-projector focus:outline-none"
+          placeholder="Share your thoughts on the film…"
+          className="mt-1.5 w-full rounded-[8px] border border-line bg-night p-3 text-[15px] text-ink placeholder-mute focus:border-ink focus:outline-none"
         />
       </div>
 
-      {/* Hata bildirimi */}
       {formError && (
-        <p className="mt-2 text-xs text-sentiment-neg">
+        <p role="alert" className="mt-2 text-[13px] text-neg">
           {formError}
         </p>
       )}
 
-      {/* Butonlar */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 pt-2">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-1">
         <div className="flex items-center gap-2">
           <button
             type="submit"
             disabled={isSubmitting || rating === 0}
-            className="btn-pressable inline-flex items-center rounded-md bg-amber-projector px-4 py-2 text-xs font-semibold text-charcoal-950 hover:bg-amber-projector-hover disabled:pointer-events-none disabled:opacity-40"
+            className="inline-flex cursor-pointer items-center rounded-[8px] bg-ink px-4 py-2 text-[15px] font-medium text-night transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
           >
             {isSubmitting
-              ? 'Kaydediliyor…'
+              ? 'Saving…'
               : isEditing
-                ? 'Değişiklikleri Kaydet'
-                : 'Yorumu Gönder'}
+                ? 'Save changes'
+                : 'Post review'}
           </button>
 
           {isEditing && onCancel && (
             <button
               type="button"
               onClick={onCancel}
-              className="btn-pressable inline-flex items-center rounded-md border border-charcoal-700 bg-charcoal-850 px-3.5 py-2 text-xs font-medium text-charcoal-300 hover:text-charcoal-100"
+              className="inline-flex cursor-pointer items-center rounded-[8px] border border-line bg-transparent px-4 py-2 text-[15px] font-medium text-ink transition-colors hover:border-mute"
             >
-              İptal
+              Cancel
             </button>
           )}
         </div>
@@ -218,32 +212,32 @@ export default function ReviewForm({
           <div>
             {showDeleteConfirm ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-charcoal-400">
-                  Yorum silinsin mi?
+                <span className="text-[13px] text-mute">
+                  Delete this review?
                 </span>
                 <button
                   type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="btn-pressable rounded bg-sentiment-neg px-2.5 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+                  className="cursor-pointer rounded-[8px] bg-neg px-3 py-1.5 text-[13px] font-medium text-night hover:opacity-90 disabled:opacity-50"
                 >
-                  {isDeleting ? 'Siliniyor…' : 'Evet, Sil'}
+                  {isDeleting ? 'Deleting…' : 'Confirm delete'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="rounded border border-charcoal-700 px-2.5 py-1 text-xs text-charcoal-300 hover:text-white"
+                  className="cursor-pointer rounded-[8px] border border-line px-3 py-1.5 text-[13px] text-ink hover:border-mute"
                 >
-                  Vazgeç
+                  Cancel
                 </button>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="btn-pressable text-xs text-charcoal-400 hover:text-sentiment-neg"
+                className="cursor-pointer text-[13px] text-mute transition-colors hover:text-neg"
               >
-                Yorumu Sil
+                Delete review
               </button>
             )}
           </div>

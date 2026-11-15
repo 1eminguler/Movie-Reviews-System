@@ -21,17 +21,17 @@ export default function LoginPage() {
 
     const trimmedUsername = username.trim()
     if (trimmedUsername.length < 3 || trimmedUsername.length > 50) {
-      setErrorMsg('Kullanıcı adı 3 ile 50 karakter arasında olmalıdır.')
+      setErrorMsg('Username must be between 3 and 50 characters.')
       return
     }
 
     const passwordBytes = new TextEncoder().encode(password).length
     if (password.length < 8) {
-      setErrorMsg('Şifre en az 8 karakter olmalıdır.')
+      setErrorMsg('Password must be at least 8 characters.')
       return
     }
     if (passwordBytes > 72) {
-      setErrorMsg('Şifre en fazla 72 bayt olabilir.')
+      setErrorMsg('Password must be at most 72 bytes.')
       return
     }
 
@@ -47,26 +47,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-280px)] max-w-md flex-col justify-center py-10">
-      <div className="rounded-xl border border-charcoal-800 bg-charcoal-900/70 p-6 sm:p-8 backdrop-blur shadow-2xl">
-        <div className="text-center">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-projector/40 bg-charcoal-850 text-amber-projector mb-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="h-5 w-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-            </svg>
-          </span>
-          <h1 className="font-serif text-2xl font-normal text-charcoal-50">
-            Giriş Yap
+    <div className="flex min-h-[calc(100vh-220px)] items-center justify-center py-8">
+      <div className="w-full max-w-md rounded-[10px] border border-line bg-panel p-6 sm:p-8">
+        <div>
+          <h1 className="font-display text-[30px] font-bold tracking-[-0.02em] text-ink">
+            Sign in
           </h1>
-          <p className="mt-1 text-xs text-charcoal-400">
-            Film yorumlarınızı yönetmek ve oy kullanmak için oturum açın
+          <p className="mt-1 text-[15px] text-mute">
+            Sign in to rate films and manage your reviews.
           </p>
         </div>
 
         {errorMsg && (
           <div
             role="alert"
-            className="mt-5 rounded-md border border-sentiment-neg-border bg-sentiment-neg-bg p-3 text-xs text-sentiment-neg"
+            className="mt-5 rounded-[8px] border border-neg/40 bg-night p-3 text-[13px] text-neg"
           >
             {errorMsg}
           </div>
@@ -76,9 +71,9 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="username-input"
-              className="block text-xs font-medium text-charcoal-300"
+              className="block text-[13px] font-medium text-ink"
             >
-              Kullanıcı Adı
+              Username
             </label>
             <input
               id="username-input"
@@ -87,17 +82,17 @@ export default function LoginPage() {
               autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="mt-1.5 w-full rounded-md border border-charcoal-700 bg-charcoal-950 px-3.5 py-2 text-sm text-charcoal-100 placeholder-charcoal-600 transition-colors focus:border-amber-projector focus:outline-none"
-              placeholder="kullanici_adi"
+              className="mt-1.5 w-full rounded-[8px] border border-line bg-night px-3.5 py-2 text-[15px] text-ink placeholder-mute focus:border-ink focus:outline-none"
+              placeholder="your_username"
             />
           </div>
 
           <div>
             <label
               htmlFor="password-input"
-              className="block text-xs font-medium text-charcoal-300"
+              className="block text-[13px] font-medium text-ink"
             >
-              Şifre
+              Password
             </label>
             <input
               id="password-input"
@@ -106,28 +101,28 @@ export default function LoginPage() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1.5 w-full rounded-md border border-charcoal-700 bg-charcoal-950 px-3.5 py-2 text-sm text-charcoal-100 placeholder-charcoal-600 transition-colors focus:border-amber-projector focus:outline-none"
-              placeholder="••••••••"
+              className="mt-1.5 w-full rounded-[8px] border border-line bg-night px-3.5 py-2 text-[15px] text-ink placeholder-mute focus:border-ink focus:outline-none"
+              placeholder="At least 8 characters"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="btn-pressable w-full rounded-md bg-amber-projector py-2.5 text-xs font-semibold text-charcoal-950 hover:bg-amber-projector-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-projector disabled:opacity-50"
+            className="w-full cursor-pointer rounded-[8px] bg-ink py-2.5 text-[15px] font-medium text-night transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {isSubmitting ? 'Giriş Yapılıyor…' : 'Giriş Yap'}
+            {isSubmitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-charcoal-400">
-          Hesabınız yok mu?{' '}
+        <p className="mt-6 text-[13px] text-mute">
+          Don&apos;t have an account?{' '}
           <Link
             to="/register"
             state={{ from }}
-            className="font-medium text-amber-projector hover:underline"
+            className="font-medium text-ink underline-offset-2 hover:underline"
           >
-            Kayıt Olun
+            Create account
           </Link>
         </p>
       </div>

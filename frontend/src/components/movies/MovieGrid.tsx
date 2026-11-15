@@ -7,30 +7,24 @@ interface MovieGridProps {
   isLoading?: boolean
   skeletonCount?: number
   className?: string
-  enableInitialStagger?: boolean
 }
 
 export default function MovieGrid({
   movies,
   isLoading = false,
-  skeletonCount = 12,
+  skeletonCount = 24,
   className = '',
-  enableInitialStagger = false,
 }: MovieGridProps) {
   if (isLoading) {
     return (
       <div
-        className={`grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6 ${className}`}
+        className={`grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4 ${className}`}
       >
         {Array.from({ length: skeletonCount }).map((_, index) => (
-          <div
-            key={`skel-${index}`}
-            className="flex flex-col rounded-lg border border-charcoal-800 bg-charcoal-900/40 p-2.5"
-          >
+          <div key={`skel-${index}`} className="flex flex-col space-y-2">
             <Skeleton variant="poster" />
-            <Skeleton variant="text" className="mt-3 h-3 w-1/3" />
-            <Skeleton variant="text" className="mt-1.5 h-4 w-4/5" />
-            <Skeleton variant="text" className="mt-3 h-3 w-2/3" />
+            <Skeleton variant="text" className="h-4 w-4/5" />
+            <Skeleton variant="text" className="h-3 w-1/2" />
           </div>
         ))}
       </div>
@@ -43,23 +37,11 @@ export default function MovieGrid({
 
   return (
     <div
-      className={`grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6 ${className}`}
+      className={`grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4 ${className}`}
     >
-      {movies.map((movie, index) => {
-        const animationDelay = enableInitialStagger
-          ? `${Math.min(index * 35, 380)}ms`
-          : undefined
-
-        return (
-          <div
-            key={movie.id}
-            className={enableInitialStagger ? 'animate-card-entrance' : undefined}
-            style={animationDelay ? { animationDelay } : undefined}
-          >
-            <MovieCard movie={movie} />
-          </div>
-        )
-      })}
+      {movies.map((movie) => (
+        <MovieCard key={movie.id} movie={movie} />
+      ))}
     </div>
   )
 }

@@ -28,22 +28,19 @@ export default function Poster({
   const width = size === 'lg' ? 'w500' : 'w342'
   const imageUrl = path ? `${TMDB_IMAGE_BASE}/${width}${path}` : null
 
-  const style = viewTransitionName
-    ? { viewTransitionName }
-    : undefined
+  const style = viewTransitionName ? { viewTransitionName } : undefined
 
   if (!imageUrl || hasError) {
     return (
       <div
         style={style}
-        className={`relative aspect-[2/3] w-full overflow-hidden rounded-md border border-charcoal-800 bg-charcoal-900 flex flex-col items-center justify-center p-3 text-center select-none ${className}`}
-        aria-label={`${title} afişi bulunamadı`}
+        className={`relative aspect-[2/3] w-full overflow-hidden rounded-[6px] border border-line bg-panel flex flex-col items-center justify-center p-3 text-center select-none ${className}`}
+        aria-label={`${title} poster unavailable`}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950 via-charcoal-900/60 to-transparent pointer-events-none" />
-        <span className="font-serif text-3xl font-light tracking-wider text-amber-projector/80">
+        <span className="font-display text-[22px] font-bold tracking-[-0.02em] text-mute">
           {getInitials(title)}
         </span>
-        <span className="mt-2 line-clamp-2 text-xs font-medium text-charcoal-400">
+        <span className="mt-2 line-clamp-2 text-[13px] text-mute">
           {title}
         </span>
       </div>
@@ -53,14 +50,14 @@ export default function Poster({
   return (
     <div
       style={style}
-      className={`relative aspect-[2/3] w-full overflow-hidden rounded-md border border-charcoal-800 bg-charcoal-900 ${className}`}
+      className={`relative aspect-[2/3] w-full overflow-hidden rounded-[6px] border border-line bg-panel ${className}`}
     >
       <img
         src={imageUrl}
-        alt={`${title} afişi`}
+        alt={`${title} poster`}
         loading="lazy"
         onError={() => setHasError(true)}
-        className="h-full w-full object-cover transition-transform duration-200"
+        className="h-full w-full object-cover"
       />
     </div>
   )
